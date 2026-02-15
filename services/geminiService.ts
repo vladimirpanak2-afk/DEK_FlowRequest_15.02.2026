@@ -45,9 +45,10 @@ export const analyzeTaskBreakdown = async (
     Zadavatel: ${currentUser.name}, Role: ${currentUser.role_key}.
     
     DETEKCE HROMADNÝCH ÚKOLŮ (targetScope: 'ROLE_ALL'):
-    - Pokud uživatel použije slova jako "všem", "všichni", "celý tým", "každý", nastav targetScope na 'ROLE_ALL'.
-    - Příklad: "Všem obchodníkům: odevzdejte report" -> targetScope: 'ROLE_ALL', estimatedRoleKey: 'OBCHODNIK_ZDIVO' (nebo jiný relevantní obchodník).
-    - Příklad: "Všichni sádrokartonáři: prověřte ceny" -> targetScope: 'ROLE_ALL', estimatedRoleKey: 'PM_SADROKARTON'.
+    - Pokud uživatel použije slova jako "všem", "všichni", "celý tým", nastav targetScope na 'ROLE_ALL'.
+    - Pokud uživatel řekne jen "všem obchodníkům" (bez specializace), použij estimatedRoleKey: 'OBCHODNIK'.
+    - Pokud uživatel řekne jen "všem PM" nebo "všem produktovým manažerům", použij estimatedRoleKey: 'PM'.
+    - Pokud specifikuje materiál ("všem obchodníkům na zdivo"), použij konkrétní klíč (např. 'OBCHODNIK_ZDIVO').
     
     PRAVIDLA DELEGOVÁNÍ:
     1. PROVOZNÍ TECHNIK (role PROVOZNI_TECHNIK): Technické výpočty, výkazy výměr, spotřeba materiálu.
@@ -114,7 +115,7 @@ export const analyzeDocumentVision = async (
     contents: {
       parts: [
         { inlineData: { data: base64Image, mimeType: mimeType } },
-        { text: `Analyzuj dokument a text: "${userText}". Pokud jde o hromadné oslovení celého týmu (všem, všichni), nastav targetScope na 'ROLE_ALL'. Jinak deleguj podle standardních kompetencí (výpočty -> technik, nákupky -> PM, prodej -> obchodník).` }
+        { text: `Analyzuj dokument a text: "${userText}". Pokud jde o hromadné oslovení celého týmu (všem, všichni), nastav targetScope na 'ROLE_ALL'. Pokud jde o celou kategorii bez specializace, použij klíč 'OBCHODNIK' nebo 'PM'. Jinak deleguj podle standardních kompetencí.` }
       ]
     },
     config: {

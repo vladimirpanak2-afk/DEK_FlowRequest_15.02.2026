@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing for service import to match file name on disk
-import { processTaskEmailAutomation } from '../services/emailService.ts';
+// Fixed casing of import to match file name in the project
+import { processTaskEmailAutomation } from '../services/EmailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
 interface NewFlowModalProps {
@@ -232,18 +232,25 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     const flowId = `f-${Date.now()}`;
     const finalTasks: SubRequest[] = [];
     
-    // Fan-out distribution logic
+    // Fan-out distribution logic with Category Support
     for (let i = 0; i < subTasks.length; i++) {
       const st = subTasks[i];
       if (st.isBroadcast) {
-        // Find everyone in the target role
-        const usersInRole = teamMembers.filter(u => u.role_key === st.assigned_role_key);
+        // Find everyone in the target role or CATEGORY
+        // If assigned_role_key is e.g. 'OBCHODNIK', we match all 'OBCHODNIK_*'
+        const isGeneric = !st.assigned_role_key?.includes('_');
+        const usersInRole = teamMembers.filter(u => 
+          isGeneric 
+            ? u.role_key.startsWith(st.assigned_role_key!) 
+            : u.role_key === st.assigned_role_key
+        );
+
         for (const user of usersInRole) {
           const task: SubRequest = { 
             ...st, 
             id: `t-bc-${user.id}-${i}-${Date.now()}`, 
             assigneeId: user.id,
-            isBroadcast: true // Keep flag for individual tasks to show badge
+            isBroadcast: true 
           } as SubRequest;
           
           await processTaskEmailAutomation(task, { id: flowId, title, description, creatorId: currentUser.id, createdAt: '', tags: [], subRequests: [], status: 'ACTIVE' });
@@ -324,16 +331,23 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     };
 
     const selectedUser = teamMembers.find(m => m.id === task.assigneeId);
-    const currentAssignee = task.isBroadcast 
-      ? `VŠICHNI: ${teamMembers.find(t => t.role_key === task.assigned_role_key)?.role}`
-      : selectedUser ? `${selectedUser.name} (${selectedUser.role})` : 'Vybrat řešitele';
+    
+    // Logic for label displaying generic vs specific
+    const getAssigneeLabel = () => {
+      if (task.isBroadcast) {
+        if (task.assigned_role_key === 'OBCHODNIK') return 'VŠICHNI OBCHODNÍCI';
+        if (task.assigned_role_key === 'PM') return 'VŠICHNI PM';
+        return `VŠICHNI: ${teamMembers.find(t => t.role_key === task.assigned_role_key)?.role || task.assigned_role_key}`;
+      }
+      return selectedUser ? `${selectedUser.name} (${selectedUser.role})` : 'Vybrat řešitele';
+    };
 
     return (
       <div className="relative w-full lg:w-72" ref={pickerRef}>
         <button onClick={() => setOpenPickerId(isOpen ? null : (task.id || null))} className={`w-full h-12 px-4 rounded-xl border flex items-center justify-between text-[10px] font-black uppercase tracking-widest transition-all ${isDarkMode ? 'bg-slate-800 border-white/5 text-white hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'}`}>
           <div className="flex items-center gap-2 truncate">
             {task.isBroadcast ? <Users className="w-4 h-4 text-amber-500 shrink-0" /> : <User className="w-4 h-4 text-indigo-500 shrink-0" />}
-            <span className="truncate">{currentAssignee}</span>
+            <span className="truncate">{getAssigneeLabel()}</span>
           </div>
           <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -359,16 +373,35 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                         <span className="text-[10px] font-black uppercase tracking-widest">Nový řešitel</span>
                       </button>
                     </>
-                  ) : Array.from(new Set(teamMembers.map(m => m.role_key))).map((rk: string) => {
-                    const roleName = teamMembers.find(t => t.role_key === rk)?.role;
-                    const isSelected = task.isBroadcast && task.assigned_role_key === rk;
-                    return (
-                      <button key={rk} onClick={() => handleSelect(`ROLE_${rk}`, true, rk)} className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${isSelected ? (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700') : (isDarkMode ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-slate-50 text-slate-700')}`}>
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500 text-white shadow-lg shadow-amber-500/20"><Users2 className="w-5 h-5" /></div>
-                        <div><div className="text-[10px] font-black uppercase tracking-widest">Všichni: {roleName}</div><div className="text-[9px] text-slate-500 font-bold uppercase">Hromadná distribuce</div></div>
-                      </button>
-                    );
-                  })}
+                  ) : (
+                    <>
+                      {/* Generické možnosti navrchu */}
+                      <div className="p-2 space-y-1">
+                        <button onClick={() => handleSelect('ROLE_ALL_OBCHODNIK', true, 'OBCHODNIK')} className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 hover:bg-indigo-500/20`}>
+                          <Users2 className="w-6 h-6" />
+                          <div><div className="text-[10px] font-black uppercase tracking-widest">Všichni obchodníci</div><div className="text-[9px] font-bold">Celoplošně (Zdivo, SDK, Fasády...)</div></div>
+                        </button>
+                        <button onClick={() => handleSelect('ROLE_ALL_PM', true, 'PM')} className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all bg-violet-500/10 text-violet-500 border border-violet-500/20 hover:bg-violet-500/20`}>
+                          <Sparkles className="w-6 h-6" />
+                          <div><div className="text-[10px] font-black uppercase tracking-widest">Všichni PM</div><div className="text-[9px] font-bold">Celoplošně (Všichni produktoví)</div></div>
+                        </button>
+                      </div>
+                      
+                      <div className="h-px bg-slate-100 dark:bg-white/5 my-2" />
+
+                      {/* Konkrétní specializace */}
+                      {Array.from(new Set(teamMembers.map(m => m.role_key))).map((rk: string) => {
+                        const roleName = teamMembers.find(t => t.role_key === rk)?.role;
+                        const isSelected = task.isBroadcast && task.assigned_role_key === rk;
+                        return (
+                          <button key={rk} onClick={() => handleSelect(`ROLE_${rk}`, true, rk)} className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${isSelected ? (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700') : (isDarkMode ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-slate-50 text-slate-700')}`}>
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500 text-white shadow-lg shadow-amber-500/20"><Users2 className="w-5 h-5" /></div>
+                            <div><div className="text-[10px] font-black uppercase tracking-widest">Všichni: {roleName}</div><div className="text-[9px] text-slate-500 font-bold uppercase">Hromadná distribuce</div></div>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               </>
             ) : (
