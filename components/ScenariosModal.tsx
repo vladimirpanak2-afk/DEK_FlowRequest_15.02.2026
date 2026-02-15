@@ -14,29 +14,29 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({ onClose, onStartScenari
       id: "oz-zdivo",
       title: "OZ Mojmír: Velká zakázka Zdivo",
       icon: <LayoutGrid className="w-6 h-6 text-indigo-400" />,
-      desc: "Delegace objektové slevy a prověření expedice na PM.",
-      text: "Mám poptávku od firmy Stavitel s.r.o. na 80 kamionů cihel Porotherm na projekt Rezidence Vltava. Bořku (PM), potřebuji, abys u Wienerbergeru vyjednal extra objektovou slevu, s touhle nákupkou to nevyhrajeme. Zároveň mi prosím prověř logistiku – jestli jsou u nich na expedici schopni zajistit takový vývoz v kuse od příštího měsíce."
+      desc: "Ověření objektové slevy u PM.",
+      text: "Mám poptávku od firmy Stavitel s.r.o. na 80 kamionů cihel Porotherm na projekt Rezidence Vltava. Potřebuji objektovou slevu."
     },
     {
       id: "oz-fasady",
       title: "OZ Honza: Fasády a ETICS",
       icon: <Calculator className="w-6 h-6 text-emerald-400" />,
       desc: "Delegace výpočtu na technika a vzorků na PM.",
-      text: "Máme rozdělanou tu školu v Berouně. Čestmíre (Technik), hoď na to prosím oko a spočítej mi přesnou spotřebu ETICS (lepidlo, omítka) podle výkresů, ať to mám v nabídce správně. Lucko (PM), u Stachemy prosím domluv fyzický vzorkovník omítek pro investora, chce si vybrat odstín přímo na stavbě."
+      text: "Máme rozdělanou tu školu v Berouně. Potřebuji spočítat přesnou spotřebu ETICS (lepidlo, omítka) podle výkresů, ať to mám v nabídce správně. Lucko (PM), u Stachemy prosím domluv fyzický vzorkovník omítek pro investora, chce si vybrat odstín přímo na stavbě."
     },
     {
       id: "oz-sdk",
       title: "OZ Petra: Sádrokartony",
       icon: <Zap className="w-6 h-6 text-amber-400" />,
       desc: "Delegace podržení akční ceny u výrobce na PM.",
-      text: "Připravuji nabídku na sádrokartony pro vestavbu v hale C pro firmu HALA-STAV. Je tam hodně akustických desek Rigips. Petře (PM), podržíš mi prosím tu akční cenu ještě o týden déle? Zákazník se rozhodne v pondělí a potřebuju mu tu nákupku garantovat."
+      text: "Připravuji nabídku na sádrokartony pro vestavbu v hale C pro firmu HALA-STAV. Je tam hodně akustických desek Rigips. Petře podržíš mi prosím tu akční cenu ještě o týden déle? Zákazník se rozhodne v pondělí a potřebuju mu tu cenu garantovat."
     },
     {
       id: "reditel-vsem",
       title: "Ředitel Eva: Hromadný report",
       icon: <Users className="w-6 h-6 text-violet-400" />,
       desc: "Zadání pro všechny obchodníky najednou.",
-      text: "Všem obchodníkům: Do pátku potřebuji mít v CRM kompletně zapsané všechny štiky za tento měsíc a reporty z posledních schůzek u VIP klientů. Budeme to vyhodnocovat na pondělní poradě celého týmu."
+      text: "Všem obchodníkům: Do pátku potřebuji mít v CRM kompletně zapsané všechny štiky za tento měsíc a reporty z posledních schůzek. Budeme to vyhodnocovat na pondělní poradě celého týmu."
     },
     {
       id: "sklad-provireni",

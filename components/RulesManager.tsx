@@ -24,6 +24,16 @@ const RulesManager: React.FC<RulesManagerProps> = ({ mappings, setMappings, team
 
   const toggleRole = (id: string) => setExpandedRole(expandedRole === id ? null : id);
 
+  // Funkce pro smazání celé JEDNOTKY (RoleMapping)
+  const deleteRoleMapping = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // Kritické: zabrání toggleRole při kliknutí na popelnici
+    if (!confirm("VAROVÁNÍ: Opravdu chcete smazat CELOU tuto jednotku a všechna její pravidla?")) return;
+    
+    setMappings(prev => prev.filter(m => m.id !== id));
+    if (expandedRole === id) setExpandedRole(null);
+  };
+
   const addKeyword = (mappingId: string, groupName: string) => {
     const kw = newKeyword.toLowerCase().trim();
     if (!kw) return;
@@ -64,18 +74,34 @@ const RulesManager: React.FC<RulesManagerProps> = ({ mappings, setMappings, team
     setAddingGroupToRoleId(null);
   };
 
-  const deleteGroup = (mappingId: string, groupName: string) => {
-    if (!confirm(`Opravdu chcete smazat kategorii ${groupName}?`)) return;
-    setMappings(prev => prev.map(m => 
-      m.id === mappingId ? { ...m, groups: m.groups.filter(g => g.name !== groupName) } : m
-    ));
+  // Funkce pro smazání KATEGORIE (Group) uvnitř jednotky
+  const deleteGroup = (mappingId: string, groupName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Opravdu chcete smazat kategorii "${groupName}"?`)) return;
+    
+    setMappings(prev => {
+      const newMappings = prev.map(m => {
+        if (m.id !== mappingId) return m;
+        return {
+          ...m,
+          groups: m.groups.filter(g => g.name !== groupName)
+        };
+      });
+      return newMappings;
+    });
+    
+    // Pokud jsme právě tuto kategorii editovali, zrušíme editaci
+    if (editingGroupId?.mappingId === mappingId && editingGroupId?.groupName === groupName) {
+      setEditingGroupId(null);
+    }
   };
 
   const getCategoryIcon = (name: string) => {
     const n = name.toLowerCase();
-    if (n.includes('materiál') || n.includes('desky') || n.includes('zdivo')) return <Package className="w-4 h-4" />;
+    if (n.includes('materiál') || n.includes('desky') || n.includes('zdivo') || n.includes('sortiment')) return <Package className="w-4 h-4" />;
     if (n.includes('logistik') || n.includes('auto') || n.includes('doprava')) return <Truck className="w-4 h-4" />;
-    if (n.includes('služb') || n.includes('konstrukce') || n.includes('montáž')) return <Wrench className="w-4 h-4" />;
+    if (n.includes('služb') || n.includes('konstrukce') || n.includes('montáž') || n.includes('technika')) return <Wrench className="w-4 h-4" />;
     return <Layers className="w-4 h-4" />;
   };
 
@@ -174,8 +200,8 @@ const RulesManager: React.FC<RulesManagerProps> = ({ mappings, setMappings, team
                 ? (isDarkMode ? 'border-indigo-500/50 bg-white/5 ring-4 ring-indigo-500/5 shadow-2xl' : 'border-indigo-200 bg-white ring-4 ring-indigo-500/5 shadow-xl') 
                 : (isDarkMode ? 'border-white/5 bg-white/5 hover:bg-white/10' : 'bg-slate-50/50 border-slate-100 hover:bg-slate-50')
             }`}>
-              <button onClick={() => toggleRole(mapping.id)} className="w-full p-6 flex items-center justify-between text-left group">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between w-full group">
+                <button onClick={() => toggleRole(mapping.id)} className="flex-1 p-6 flex items-center gap-4 text-left">
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
                     expandedRole === mapping.id 
                       ? 'bg-indigo-600 text-white' 
@@ -190,8 +216,15 @@ const RulesManager: React.FC<RulesManagerProps> = ({ mappings, setMappings, team
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{mapping.groups.length} kategorií</span>
                     </div>
                   </div>
-                </div>
-              </button>
+                </button>
+                <button 
+                  onClick={(e) => deleteRoleMapping(mapping.id, e)}
+                  className={`mr-6 p-3 rounded-xl transition-all relative z-20 ${isDarkMode ? 'text-slate-500 hover:bg-red-500/20 hover:text-red-400' : 'text-slate-300 hover:bg-red-50 hover:text-red-600'}`}
+                  title="Smazat celou jednotku"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
 
               {expandedRole === mapping.id && (
                 <div className={`px-8 pb-10 pt-2 border-t animate-in slide-in-from-top-2 ${isDarkMode ? 'border-white/5' : 'border-slate-50'}`}>
@@ -225,9 +258,20 @@ const RulesManager: React.FC<RulesManagerProps> = ({ mappings, setMappings, team
                             <span className="text-indigo-600">{getCategoryIcon(group.name)}</span>
                             <h4 className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{group.name}</h4>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => setEditingGroupId({mappingId: mapping.id, groupName: group.name})} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"><Plus className="w-4 h-4" /></button>
-                            <button onClick={() => deleteGroup(mapping.id, group.name)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          <div className="flex items-center gap-1 relative z-30">
+                            <button 
+                              onClick={() => setEditingGroupId({mappingId: mapping.id, groupName: group.name})} 
+                              className={`p-1.5 rounded-lg transition-all ${isDarkMode ? 'text-slate-500 hover:text-indigo-400 hover:bg-white/10' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => deleteGroup(mapping.id, group.name, e)} 
+                              className={`p-1.5 rounded-lg transition-all ${isDarkMode ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-600 hover:bg-red-50'}`}
+                              title="Smazat kategorii"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
 
