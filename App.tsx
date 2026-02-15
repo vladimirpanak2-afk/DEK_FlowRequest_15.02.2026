@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import FlowCard from './components/FlowCard.tsx';
@@ -108,10 +107,9 @@ const App: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Funkce pro zavření modálu a vyčištění stavu
   const closeNewFlow = () => {
     setIsModalOpen(false);
-    setPrefilledDescription(''); // Vyčištění pro příští otevření
+    setPrefilledDescription('');
     setModalInitialMode(null);
   };
 
@@ -184,7 +182,7 @@ const App: React.FC = () => {
   const handleSaveFlow = (newFlow: Flow) => {
     const initializedFlow = { ...newFlow, status: 'ACTIVE' as FlowStatus };
     setFlows([initializedFlow, ...flows]);
-    closeNewFlow(); // Použije novou resetovací funkci
+    closeNewFlow();
     setSelectedFlowId(newFlow.id);
     setNotification(`Zakázka "${newFlow.title}" vytvořena.`);
     setViewMode('mine');
@@ -303,8 +301,6 @@ const App: React.FC = () => {
                <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 shrink-0">D</div>
                <span className={`font-black tracking-tight text-xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>DEK FlowRequest</span>
             </div>
-            
-            {/* MOBILE DATE DISPLAY */}
             <div className={`flex flex-col justify-center border-l pl-4 lg:hidden ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`}>
               <div className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
                 {now.toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' })}
@@ -333,8 +329,6 @@ const App: React.FC = () => {
                 <span className="ml-3 text-[10px] font-black uppercase tracking-widest">AI Analýza</span>
               </button>
             </div>
-            
-            {/* Mobile simplified buttons */}
             <div className="sm:hidden flex items-center gap-2">
               <button onClick={() => openNewFlow('text', 'WORKFLOW')} className="w-11 h-11 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg"><PlusCircle className="w-6 h-6"/></button>
               <button onClick={() => openNewFlow('text', 'ANALYSIS')} className="w-11 h-11 bg-violet-600 text-white rounded-xl flex items-center justify-center shadow-lg"><Sparkles className="w-6 h-6"/></button>
@@ -470,7 +464,6 @@ const App: React.FC = () => {
                   ))}
                 </div>
               ) : !searchQuery ? (
-                /* WELCOME GRID - ONLY FOR EMPTY DASHBOARD */
                 <div className="max-w-7xl mx-auto space-y-12 py-10 animate-in fade-in zoom-in duration-1000">
                   <div className="text-center space-y-4">
                     <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
@@ -506,7 +499,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                /* SEARCH NO RESULTS */
                 <div className="max-w-6xl mx-auto py-20 text-center space-y-4">
                   <div className={`inline-flex items-center justify-center p-3 rounded-2xl mb-4 ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
                     <Search className="w-8 h-8" />
@@ -520,7 +512,6 @@ const App: React.FC = () => {
             <AIAnalysesArchive analyses={analyses} setAnalyses={setAnalyses} isDarkMode={isDarkMode} />
           ) : activeTab === 'ai-tips' ? (
             <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-               {/* Header Hero Section for Tips */}
                <div className={`p-8 sm:p-12 rounded-[3rem] relative overflow-hidden border ${isDarkMode ? 'bg-gradient-to-br from-amber-950/40 to-slate-900 border-amber-500/20' : 'bg-gradient-to-br from-amber-50 to-white border-amber-200 shadow-xl shadow-amber-500/5'}`}>
                 <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
                   <Zap className="w-64 h-64 text-amber-500" />
@@ -534,7 +525,6 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tips Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
                   {
@@ -596,7 +586,7 @@ const App: React.FC = () => {
 
       {isModalOpen && (
         <NewFlowModal 
-          onClose={closeNewFlow} // Použije novou resetovací funkci
+          onClose={closeNewFlow}
           onSave={handleSaveFlow}
           onSaveAnalysis={handleSaveAnalysis}
           mappings={mappings}
@@ -605,6 +595,7 @@ const App: React.FC = () => {
           initialMode={modalInitialMode || undefined}
           initialModalMode={modalInitialAIRezim}
           teamMembers={teamMembers}
+          setTeamMembers={setTeamMembers}
           currentUser={currentUser}
           isDarkMode={isDarkMode}
         />

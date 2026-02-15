@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History } from 'lucide-react';
+import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing for import to match file system / already included file
-import { processTaskEmailAutomation } from '../services/emailService.ts';
+// Fixed casing mismatch: already included file name 'file:///services/emailService.ts' differs from file name 'file:///services/EmailService.ts' only in casing.
+import { processTaskEmailAutomation } from '../services/EmailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
 interface NewFlowModalProps {
@@ -15,13 +15,14 @@ interface NewFlowModalProps {
   initialMode?: 'voice' | 'camera' | 'text' | 'upload';
   initialModalMode?: 'WORKFLOW' | 'ANALYSIS';
   teamMembers: UserType[];
+  setTeamMembers: React.Dispatch<React.SetStateAction<UserType[]>>;
   currentUser: UserType;
   isDarkMode: boolean;
 }
 
 const NewFlowModal: React.FC<NewFlowModalProps> = ({ 
   onClose, onSave, onSaveAnalysis, mappings, setMappings, initialDescription = '', 
-  initialMode, initialModalMode = 'WORKFLOW', teamMembers, currentUser, isDarkMode 
+  initialMode, initialModalMode = 'WORKFLOW', teamMembers, setTeamMembers, currentUser, isDarkMode 
 }) => {
   const [description, setDescription] = useState(initialDescription);
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -182,7 +183,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
             : teamMembers.find(m => m.role_key === st.estimatedRoleKey)?.id || ''
         }));
         setSubTasks(prev => [...prev, ...newAISubTasks]);
-        // Fast scroll to results on mobile for better UX
         setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
       }
     } finally { setIsAnalyzing(false); }
@@ -251,7 +251,11 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
 
   const AssigneePicker = ({ task, index }: { task: Partial<SubRequest>, index: number }) => {
     const [showBroadcast, setShowBroadcast] = useState(false);
-    const [expanded, setExpanded] = useState(false);
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
+    const [newUserName, setNewUserName] = useState('');
+    const [newUserEmail, setNewUserEmail] = useState('');
+    const [newUserRole, setNewUserRole] = useState('');
+    
     const isOpen = openPickerId === task.id;
     const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -259,7 +263,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
       const handleClickOutside = (e: MouseEvent) => {
         if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
           setOpenPickerId(null);
-          setExpanded(false);
+          setIsCreatingNew(false);
         }
       };
       if (isOpen) document.addEventListener('mousedown', handleClickOutside);
@@ -273,7 +277,39 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
       n[index].assigned_role_key = roleKey;
       setSubTasks(n);
       setOpenPickerId(null);
-      setExpanded(false);
+      setIsCreatingNew(false);
+    };
+
+    const handleCreateNewMember = () => {
+      if (!newUserName || !newUserEmail || !newUserRole) {
+        alert("Prosím vyplňte všechna pole pro nového člena.");
+        return;
+      }
+      
+      const roleKey = newUserRole.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+      const newUserId = `u-new-${Date.now()}`;
+      
+      const newUser: UserType = {
+        id: newUserId,
+        name: newUserName,
+        email: newUserEmail,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newUserName)}`,
+        role: newUserRole,
+        role_key: roleKey,
+        isAdmin: false
+      };
+
+      setTeamMembers(prev => [...prev, newUser]);
+
+      if (!mappings.find(m => m.role === newUserRole)) {
+        setMappings(prev => [...prev, {
+          id: `m-new-${Date.now()}`,
+          role: newUserRole,
+          groups: [{ name: 'Nová oblast', keywords: [] }]
+        }]);
+      }
+
+      handleSelect(newUserId, false, roleKey);
     };
 
     const selectedUser = teamMembers.find(m => m.id === task.assigneeId);
@@ -292,27 +328,61 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
         </button>
         {isOpen && (
           <div className={`absolute bottom-full mb-2 left-0 right-0 z-[100] rounded-2xl border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
-            <div className={`p-3 border-b flex items-center gap-2 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-              <button onClick={() => setShowBroadcast(false)} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${!showBroadcast ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>Kolegové</button>
-              <button onClick={() => setShowBroadcast(true)} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${showBroadcast ? 'bg-amber-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>Hromadné</button>
-            </div>
-            <div className="p-1.5 max-h-80 overflow-y-auto custom-scrollbar">
-              {!showBroadcast ? teamMembers.map(m => (
-                <button key={m.id} onClick={() => handleSelect(m.id, false, m.role_key)} className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${task.assigneeId === m.id ? (isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-700') : (isDarkMode ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-slate-50 text-slate-700')}`}>
-                  <img src={m.avatar} className="w-8 h-8 rounded-lg border border-white/10" alt="" />
-                  <div className="min-w-0"><div className="text-[11px] font-black uppercase truncate">{m.name}</div><div className="text-[9px] text-slate-500 font-bold uppercase truncate">{m.role}</div></div>
-                </button>
-              )) : Array.from(new Set(teamMembers.map(m => m.role_key))).map((rk: string) => {
-                const roleName = teamMembers.find(t => t.role_key === rk)?.role;
-                const isSelected = task.isBroadcast && task.assigned_role_key === rk;
-                return (
-                  <button key={rk} onClick={() => handleSelect(`ROLE_${rk}`, true, rk)} className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${isSelected ? (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700') : (isDarkMode ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-slate-50 text-slate-700')}`}>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-400'}`}><Users2 className="w-5 h-5" /></div>
-                    <div><div className="text-[10px] font-black uppercase tracking-widest">Všichni: {roleName}</div><div className="text-[9px] text-slate-500 font-bold uppercase">Hromadná distribuce</div></div>
-                  </button>
-                );
-              })}
-            </div>
+            {!isCreatingNew ? (
+              <>
+                <div className={`p-3 border-b flex items-center gap-2 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                  <button onClick={() => setShowBroadcast(false)} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${!showBroadcast ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>Kolegové</button>
+                  <button onClick={() => setShowBroadcast(true)} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${showBroadcast ? 'bg-amber-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>Hromadné</button>
+                </div>
+                <div className="p-1.5 max-h-80 overflow-y-auto custom-scrollbar">
+                  {!showBroadcast ? (
+                    <>
+                      {teamMembers.map(m => (
+                        <button key={m.id} onClick={() => handleSelect(m.id, false, m.role_key)} className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${task.assigneeId === m.id ? (isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-700') : (isDarkMode ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-slate-50 text-slate-700')}`}>
+                          <img src={m.avatar} className="w-8 h-8 rounded-lg border border-white/10" alt="" />
+                          <div className="min-w-0"><div className="text-[11px] font-black uppercase truncate">{m.name}</div><div className="text-[9px] text-slate-500 font-bold uppercase truncate">{m.role}</div></div>
+                        </button>
+                      ))}
+                      <button onClick={() => setIsCreatingNew(true)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-left border border-dashed mt-2 transition-all ${isDarkMode ? 'border-indigo-500/30 text-indigo-400 hover:bg-white/5' : 'border-indigo-200 text-indigo-600 hover:bg-slate-50'}`}>
+                        <Plus className="w-5 h-5" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Nový řešitel</span>
+                      </button>
+                    </>
+                  ) : Array.from(new Set(teamMembers.map(m => m.role_key))).map((rk: string) => {
+                    const roleName = teamMembers.find(t => t.role_key === rk)?.role;
+                    const isSelected = task.isBroadcast && task.assigned_role_key === rk;
+                    return (
+                      <button key={rk} onClick={() => handleSelect(`ROLE_${rk}`, true, rk)} className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${isSelected ? (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700') : (isDarkMode ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-slate-50 text-slate-700')}`}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500 text-white shadow-lg shadow-amber-500/20"><Users2 className="w-5 h-5" /></div>
+                        <div><div className="text-[10px] font-black uppercase tracking-widest">Všichni: {roleName}</div><div className="text-[9px] text-slate-500 font-bold uppercase">Hromadná distribuce</div></div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="p-5 space-y-4 animate-in slide-in-from-right-2 duration-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Nový člen týmu</span>
+                  <button onClick={() => setIsCreatingNew(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Celé jméno" className={`w-full pl-9 pr-4 py-2 text-[11px] font-bold rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500/20 ${isDarkMode ? 'bg-slate-800 border-white/5' : 'bg-slate-50 border-slate-200'}`} />
+                  </div>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="E-mail" className={`w-full pl-9 pr-4 py-2 text-[11px] font-bold rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500/20 ${isDarkMode ? 'bg-slate-800 border-white/5' : 'bg-slate-50 border-slate-200'}`} />
+                  </div>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input value={newUserRole} onChange={e => setNewUserRole(e.target.value)} placeholder="Pracovní pozice" className={`w-full pl-9 pr-4 py-2 text-[11px] font-bold rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500/20 ${isDarkMode ? 'bg-slate-800 border-white/5' : 'bg-slate-50 border-slate-200'}`} />
+                  </div>
+                </div>
+                <button onClick={handleCreateNewMember} className="w-full h-10 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 mt-2">PŘIDAT A ZVOLIT</button>
+              </div>
+            )}
           </div>
         )}
       </div>
