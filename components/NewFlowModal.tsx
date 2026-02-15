@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fix casing of import to match EmailService.ts and avoid "Already included file name" error
-import { processTaskEmailAutomation } from '../services/EmailService.ts';
+// Fixed casing for import to match file system / already included file
+import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
 interface NewFlowModalProps {
@@ -362,8 +361,8 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                 <div className="flex flex-wrap items-center gap-4">
                   {modalMode === 'WORKFLOW' && (
                     <div className={`flex items-center gap-4 border p-1 rounded-2xl ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-white shadow-sm'}`}>
-                      <button onClick={() => setPriority('NORMAL')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'NORMAL' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>Normální</button>
-                      <button onClick={() => setPriority('URGENT')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'URGENT' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400'}`}>Spěchá</button>
+                      <button onClick={() => setPriority('NORMAL')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'NORMAL' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>Normální (7 dní)</button>
+                      <button onClick={() => setPriority('URGENT')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'URGENT' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400'}`}>Spěchá (2 dny)</button>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
