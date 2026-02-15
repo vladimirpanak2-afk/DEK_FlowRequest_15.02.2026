@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing: changed EmailService.ts to emailService.ts to match the file system and resolve compiler errors.
+// Fixed casing for emailService import to match file system casing and resolve TS error
 import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
+import TermButton from './TermButton.tsx';
 
 interface NewFlowModalProps {
   onClose: () => void;
@@ -29,7 +29,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     const date = new Date();
     const daysToAdd = urgency === 'URGENT' ? 2 : 7;
     date.setDate(date.getDate() + daysToAdd);
-    return date.toISOString().split('T')[0];
+    return date.toISOString();
   };
 
   const [description, setDescription] = useState(initialDescription);
@@ -60,7 +60,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
   const resultsRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const adjustTextareaHeight = (element: HTMLTextAreaElement | null) => {
     if (element) {
@@ -431,22 +430,20 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     );
   };
 
-  const getCustomDeadlineLabel = () => {
-    if (priority !== 'CUSTOM') return 'Termín';
-    const date = new Date(globalDeadline);
-    return `${date.getDate()}.${date.getMonth() + 1}.`;
+  const handleGlobalDeadlineChange = (iso?: string) => {
+    if (iso) {
+      setGlobalDeadline(iso);
+      setPriority('CUSTOM');
+    } else {
+      setPriority('NORMAL');
+      setGlobalDeadline(getDeadlineDate('NORMAL'));
+    }
   };
 
-  const handleOpenDatePicker = () => {
-    if (dateInputRef.current && 'showPicker' in HTMLInputElement.prototype) {
-      try {
-        dateInputRef.current.showPicker();
-      } catch (err) {
-        dateInputRef.current.focus();
-      }
-    } else if (dateInputRef.current) {
-      dateInputRef.current.focus();
-    }
+  const handleSubTaskDeadlineChange = (index: number, iso?: string) => {
+    const n = [...subTasks];
+    n[index].dueDate = iso || globalDeadline;
+    setSubTasks(n);
   };
 
   return (
@@ -479,7 +476,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                 <div className="flex flex-wrap items-center gap-4">
                   {modalMode === 'WORKFLOW' && (
                     <div className="flex items-center gap-3">
-                      {/* Segmented Switch for Priority */}
                       <div className={`flex items-center gap-1 border p-1 rounded-2xl transition-all ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-white shadow-sm'}`}>
                         <button 
                           onClick={() => { setPriority('NORMAL'); setGlobalDeadline(getDeadlineDate('NORMAL')); }} 
@@ -495,22 +491,11 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                         </button>
                       </div>
 
-                      {/* Separate Date Picker Button */}
-                      <button 
-                        onClick={handleOpenDatePicker}
-                        className={`h-12 px-5 rounded-2xl border flex items-center gap-3 text-[9px] font-black uppercase tracking-widest transition-all relative ${priority === 'CUSTOM' ? 'bg-amber-600 text-white border-amber-500 shadow-xl shadow-amber-600/20' : (isDarkMode ? 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 shadow-sm')}`}
-                      >
-                        <CalendarIcon className="w-4 h-4" />
-                        <span>{getCustomDeadlineLabel()}</span>
-                        <input 
-                          ref={dateInputRef}
-                          type="date" 
-                          value={globalDeadline} 
-                          onChange={(e) => { setGlobalDeadline(e.target.value); setPriority('CUSTOM'); }}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer pointer-events-auto"
-                          style={{ colorScheme: isDarkMode ? 'dark' : 'light' }}
-                        />
-                      </button>
+                      <TermButton 
+                        valueISO={priority === 'CUSTOM' ? globalDeadline : undefined}
+                        onChangeISO={handleGlobalDeadlineChange}
+                        isDarkMode={isDarkMode}
+                      />
                     </div>
                   )}
                   <div className="flex items-center gap-2">
@@ -558,7 +543,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                    <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Zap className="w-48 h-48 text-violet-500" /></div>
                    <div className="flex items-center gap-6 mb-12"><div className="w-14 h-14 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-xl"><Sparkles className="w-7 h-7" /></div><h3 className="text-3xl font-black tracking-tighter uppercase">Výsledek AI Analýzy</h3></div>
                    <div className={`prose prose-lg max-w-none font-medium leading-relaxed whitespace-pre-wrap mb-12 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{pureAnalysisResult}</div>
-                   <div className="flex justify-end gap-3 pt-8 border-t border-slate-100 dark:border-white/5"><button onClick={handleSaveToHistory} disabled={isSaved} className={`h-14 px-8 rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 transition-all ${isSaved ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>{isSaved ? <Check /> : <History />} {isSaved ? 'Uloženo' : 'Uložit'}</button><button onClick={handleCopyResult} className="h-14 px-10 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 shadow-xl transition-all active:scale-95">{isCopied ? <Check /> : <Copy />} {isCopied ? 'Zkopírováno' : 'Kopírovat'}</button></div>
+                   <div className="flex justify-end gap-3 pt-8 border-t border-slate-100 dark:border-white/5"><button onClick={handleSaveToHistory} disabled={isSaved} className={`h-14 px-8 rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 transition-all ${isSaved ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>{isSaved ? <Check /> : <History />} {isSaved ? 'Uloženo' : 'Uložit'}</button><button onClick={handleCopyResult} className="h-14 px-10 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 shadow-xl transition-all active:scale-95">{isCopied ? <Check /> : <Check />} {isCopied ? 'Zkopírováno' : 'Kopírovat'}</button></div>
                 </div>
               )}
 
@@ -569,7 +554,18 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                     {subTasks.map((task, idx) => (
                       <div key={task.id} className={`p-8 lg:p-12 rounded-[3rem] border-2 flex flex-col lg:flex-row gap-10 items-start transition-all hover:shadow-2xl ${isDarkMode ? 'bg-white/5 border-white/5 hover:border-white/10' : 'bg-slate-50 border-slate-100 hover:bg-white'}`}>
                         <div className="flex-1 space-y-6 w-full"><input placeholder="Název úkolu..." value={task.title || ''} onChange={(e) => { const n = [...subTasks]; n[idx].title = e.target.value; setSubTasks(n); }} className={`w-full bg-transparent border-b-2 py-2 font-black text-2xl outline-none transition-all ${isDarkMode ? 'border-white/10 focus:border-indigo-500' : 'border-slate-200 focus:border-indigo-600'}`} /><textarea placeholder="Instrukce..." value={task.description || ''} onChange={(e) => { const n = [...subTasks]; n[idx].description = e.target.value; setSubTasks(n); adjustTextareaHeight(e.target); }} onFocus={(e) => adjustTextareaHeight(e.target)} className="w-full bg-transparent border-none p-0 text-xl font-medium outline-none resize-none overflow-hidden leading-relaxed placeholder:text-slate-300 dark:placeholder:text-slate-700" rows={1} /></div>
-                        <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-4 w-full lg:w-80 shrink-0"><AssigneePicker task={task} index={idx} /><button onClick={() => setSubTasks(subTasks.filter((_, i) => i !== idx))} className="h-12 w-12 flex items-center justify-center rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button></div>
+                        <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-4 w-full lg:w-80 shrink-0">
+                          <AssigneePicker task={task} index={idx} />
+                          <div className="flex items-center gap-2 w-full lg:w-auto">
+                            <TermButton 
+                              valueISO={task.dueDate}
+                              onChangeISO={(iso) => handleSubTaskDeadlineChange(idx, iso)}
+                              isDarkMode={isDarkMode}
+                              className="flex-1 lg:flex-none"
+                            />
+                            <button onClick={() => setSubTasks(subTasks.filter((_, i) => i !== idx))} className="h-12 w-12 flex items-center justify-center rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"><Trash2 className="w-5 h-5" /></button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
