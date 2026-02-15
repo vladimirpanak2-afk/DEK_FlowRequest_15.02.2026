@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing of import to match file name in the project (emailService.ts)
+// Fixed casing: changed EmailService.ts to emailService.ts to match the file system and resolve compiler errors.
 import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
@@ -315,8 +315,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
         id: newUserId,
         name: newUserName,
         email: newUserEmail,
-        // Fixed: Use 'newUserName' instead of undefined 'formData.name'
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newUserName || 'User')}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newUserName)}`,
         role: newUserRole,
         role_key: roleKey,
         isAdmin: false
@@ -432,6 +431,24 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     );
   };
 
+  const getCustomDeadlineLabel = () => {
+    if (priority !== 'CUSTOM') return 'Termín';
+    const date = new Date(globalDeadline);
+    return `${date.getDate()}.${date.getMonth() + 1}.`;
+  };
+
+  const handleOpenDatePicker = () => {
+    if (dateInputRef.current && 'showPicker' in HTMLInputElement.prototype) {
+      try {
+        dateInputRef.current.showPicker();
+      } catch (err) {
+        dateInputRef.current.focus();
+      }
+    } else if (dateInputRef.current) {
+      dateInputRef.current.focus();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-slate-950 animate-in fade-in duration-300 overflow-hidden">
       <div className={`flex-1 flex flex-col w-full relative h-full ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
@@ -443,29 +460,17 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
           </div>
         )}
 
-        {/* HEADER FIXED */}
         <header className={`px-4 sm:px-6 h-16 lg:h-24 lg:px-12 border-b flex justify-between items-center sticky top-0 z-20 shrink-0 ${isDarkMode ? 'bg-slate-900/90 border-white/5 backdrop-blur-xl' : 'bg-white border-slate-100 backdrop-blur-xl'}`}>
           <div className="flex items-center gap-6">
             <h2 className="text-lg sm:text-xl lg:text-3xl font-black tracking-tighter uppercase whitespace-nowrap">{modalMode === 'WORKFLOW' ? `Nové Flow` : `AI Analýza`}</h2>
             <div className={`hidden sm:flex p-1.5 rounded-2xl border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200 shadow-sm'}`}>
-              <button 
-                onClick={() => setModalMode('WORKFLOW')} 
-                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${modalMode === 'WORKFLOW' ? 'bg-indigo-600 text-white shadow-xl scale-105 z-10' : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-800')}`}
-              >
-                Workflow
-              </button>
-              <button 
-                onClick={() => setModalMode('ANALYSIS')} 
-                className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${modalMode === 'ANALYSIS' ? 'bg-violet-600 text-white shadow-xl scale-105 z-10' : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-800')}`}
-              >
-                Analýza
-              </button>
+              <button onClick={() => setModalMode('WORKFLOW')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${modalMode === 'WORKFLOW' ? 'bg-indigo-600 text-white shadow-xl scale-105 z-10' : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-800')}`}>Workflow</button>
+              <button onClick={() => setModalMode('ANALYSIS')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${modalMode === 'ANALYSIS' ? 'bg-violet-600 text-white shadow-xl scale-105 z-10' : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-800')}`}>Analýza</button>
             </div>
           </div>
           <button onClick={onClose} className={`h-11 w-11 flex items-center justify-center rounded-xl transition-all ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-50'}`}><X className="w-8 h-8 text-slate-400" /></button>
         </header>
 
-        {/* SCROLLABLE BODY */}
         <div className="flex-1 overflow-y-auto custom-scrollbar relative">
           <div className="max-w-7xl mx-auto p-4 sm:p-8 lg:p-12 space-y-10 lg:space-y-14">
             <div className="space-y-6">
@@ -473,40 +478,45 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Vstupní zadání (AI Asistent)</label>
                 <div className="flex flex-wrap items-center gap-4">
                   {modalMode === 'WORKFLOW' && (
-                    <div className={`flex items-center gap-2 border p-1 rounded-2xl ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-white shadow-sm'}`}>
-                      <button onClick={() => { setPriority('NORMAL'); setGlobalDeadline(getDeadlineDate('NORMAL')); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'NORMAL' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>Normální</button>
-                      <button onClick={() => { setPriority('URGENT'); setGlobalDeadline(getDeadlineDate('URGENT')); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'URGENT' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400'}`}>Spěchá</button>
-                      <div className="h-4 w-px bg-slate-200 dark:bg-white/10 mx-1" />
-                      
-                      {/* Vylepšený kalendář - celý kontejner je klikatelný label */}
-                      <label 
-                        onClick={(e) => {
-                          const input = e.currentTarget.querySelector('input');
-                          if (input && 'showPicker' in input) {
-                            try { input.showPicker(); } catch (err) {}
-                          }
-                        }}
-                        className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all ${
-                          priority === 'CUSTOM' 
-                            ? (isDarkMode ? 'bg-amber-500/20 text-amber-400 shadow-[0_0_15px_-5px_rgba(245,158,11,0.3)]' : 'bg-amber-50 text-amber-700 shadow-sm border-amber-200 border') 
-                            : (isDarkMode ? 'hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-400' : 'hover:bg-indigo-50 text-slate-500 hover:text-indigo-600')
-                        }`}
+                    <div className="flex items-center gap-3">
+                      {/* Segmented Switch for Priority */}
+                      <div className={`flex items-center gap-1 border p-1 rounded-2xl transition-all ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-white shadow-sm'}`}>
+                        <button 
+                          onClick={() => { setPriority('NORMAL'); setGlobalDeadline(getDeadlineDate('NORMAL')); }} 
+                          className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'NORMAL' ? 'bg-indigo-600 text-white shadow-md' : (isDarkMode ? 'text-slate-500 hover:text-indigo-400 hover:bg-white/5' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50')}`}
+                        >
+                          Normální
+                        </button>
+                        <button 
+                          onClick={() => { setPriority('URGENT'); setGlobalDeadline(getDeadlineDate('URGENT')); }} 
+                          className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'URGENT' ? 'bg-red-600 text-white shadow-md' : (isDarkMode ? 'text-slate-500 hover:text-red-400 hover:bg-white/5' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50')}`}
+                        >
+                          Spěchá
+                        </button>
+                      </div>
+
+                      {/* Separate Date Picker Button */}
+                      <button 
+                        onClick={handleOpenDatePicker}
+                        className={`h-12 px-5 rounded-2xl border flex items-center gap-3 text-[9px] font-black uppercase tracking-widest transition-all relative ${priority === 'CUSTOM' ? 'bg-amber-600 text-white border-amber-500 shadow-xl shadow-amber-600/20' : (isDarkMode ? 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 shadow-sm')}`}
                       >
-                        <CalendarIcon className={`w-3.5 h-3.5 ${priority === 'CUSTOM' ? (isDarkMode ? 'text-amber-400' : 'text-amber-600') : (isDarkMode ? 'text-slate-500' : 'text-indigo-500')}`} />
+                        <CalendarIcon className="w-4 h-4" />
+                        <span>{getCustomDeadlineLabel()}</span>
                         <input 
                           ref={dateInputRef}
                           type="date" 
                           value={globalDeadline} 
                           onChange={(e) => { setGlobalDeadline(e.target.value); setPriority('CUSTOM'); }}
-                          className="bg-transparent text-[9px] font-black uppercase tracking-widest outline-none border-none p-0 cursor-pointer w-full"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer pointer-events-auto"
+                          style={{ colorScheme: isDarkMode ? 'dark' : 'light' }}
                         />
-                      </label>
+                      </button>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <button onClick={toggleListening} className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : (isDarkMode ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500')}`}><Mic className="w-5 h-5" /></button>
-                    <button onClick={startCamera} className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-all ${isCameraActive ? 'bg-indigo-600 text-white' : (isDarkMode ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500')}`}><Camera className="w-5 h-5" /></button>
-                    <button onClick={() => fileInputRef.current?.click()} className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-all ${isDarkMode ? 'bg-white/5 border-white/5 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}><Upload className="w-5 h-5" /></button>
+                    <button onClick={toggleListening} className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : (isDarkMode ? 'bg-white/5 border-white/5 text-slate-400 hover:bg-indigo-500/10' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100')}`}><Mic className="w-5 h-5" /></button>
+                    <button onClick={startCamera} className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-all ${isCameraActive ? 'bg-indigo-600 text-white' : (isDarkMode ? 'bg-white/5 border-white/5 text-slate-400 hover:bg-indigo-500/10' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100')}`}><Camera className="w-5 h-5" /></button>
+                    <button onClick={() => fileInputRef.current?.click()} className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-all ${isDarkMode ? 'bg-white/5 border-white/5 text-slate-400 hover:bg-indigo-500/10' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}><Upload className="w-5 h-5" /></button>
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                   </div>
                 </div>
@@ -542,7 +552,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
               </div>
             </div>
 
-            {/* RESULTS SECTION */}
             <section ref={resultsRef} className="space-y-12 pb-48 animate-in slide-in-from-bottom-8 duration-700">
               {modalMode === 'ANALYSIS' && pureAnalysisResult && (
                 <div className={`p-8 lg:p-16 rounded-[3rem] border-2 relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-violet-500/20 shadow-2xl shadow-indigo-500/5' : 'bg-white border-violet-100 shadow-2xl'}`}>
@@ -570,7 +579,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
           </div>
         </div>
 
-        {/* STICKY FOOTER FIXED */}
         <footer className={`p-8 lg:px-12 border-t flex flex-col sm:flex-row justify-between items-center gap-6 sticky bottom-0 z-30 shrink-0 ${isDarkMode ? 'bg-slate-950/95 backdrop-blur-md border-white/5 shadow-[0_-20px_50px_-10px_rgba(0,0,0,0.5)]' : 'bg-white/95 backdrop-blur-md border-slate-100 shadow-[0_-20px_50px_-10px_rgba(0,0,0,0.08)]'}`}>
           <button onClick={onClose} className="hidden sm:block h-14 px-12 font-black uppercase tracking-widest text-[11px] text-slate-400 hover:text-slate-900 transition-colors">Zahodit a zrušit</button>
           {modalMode === 'WORKFLOW' && subTasks.length > 0 && (

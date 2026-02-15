@@ -108,7 +108,7 @@ export const INITIAL_MAPPINGS: RoleMapping[] = [
     role: 'Obchodník Zdivo', 
     groups: [
       { name: 'Prodej a Nabídky', keywords: ['nabídka cihly', 'nacenění porotherm', 'kalkulace heluz', 'poptávka zdivo', 'zaměření stavby'] },
-      { name: 'Aktivity', keywords: ['štiky', 'schůzky', 'CRM hlášení', 'plnění plánu', 'výkaz práce'] }
+      { name: 'Aktivity', keywords: ['štiky', 'štika', 'report ze štiky', 'CRM aktivita', 'schůzky', 'CRM hlášení', 'plnění plánu', 'výkaz práce'] }
     ]
   },
   { 
@@ -116,7 +116,7 @@ export const INITIAL_MAPPINGS: RoleMapping[] = [
     role: 'Obchodník Fasády & ETICS', 
     groups: [
       { name: 'Prodej a Nabídky', keywords: ['nabídka fasáda', 'nacenit zateplení', 'kalkulace omítky', 'etics nabídka', 'zaměření fasády'] },
-      { name: 'Aktivity', keywords: ['štiky', 'schůzky', 'CRM', 'plnění'] }
+      { name: 'Aktivity', keywords: ['štiky', 'štika', 'report ze štiky', 'CRM aktivita', 'schůzky', 'CRM', 'plnění'] }
     ]
   },
   { 
@@ -124,7 +124,7 @@ export const INITIAL_MAPPINGS: RoleMapping[] = [
     role: 'Obchodník Sádrokartony', 
     groups: [
       { name: 'Prodej a Nabídky', keywords: ['nabídka sdk', 'nacenit podhledy', 'kalkulace příčky', 'suchá výstavba nabídka'] },
-      { name: 'Aktivity', keywords: ['štiky', 'schůzky', 'CRM', 'reporty'] }
+      { name: 'Aktivity', keywords: ['štiky', 'štika', 'report ze štiky', 'CRM aktivita', 'schůzky', 'CRM', 'reporty'] }
     ]
   },
   { 
@@ -140,7 +140,7 @@ export const INITIAL_MAPPINGS: RoleMapping[] = [
     role: 'Ředitel pobočky', 
     groups: [
       { name: 'Management', keywords: ['stížnost', 'personální věci', 'porada pobočky', 'delegování úkolů', 'kontrola docházky'] },
-      { name: 'Reporting', keywords: ['celkové štiky', 'souhrn schůzek', 'výsledky pobočky', 'plnění obchodníků'] }
+      { name: 'Reporting', keywords: ['celkové štiky', 'štiky', 'štika', 'report ze štiky', 'CRM aktivita', 'souhrn schůzek', 'výsledky pobočky', 'plnění obchodníků'] }
     ]
   },
 ];
