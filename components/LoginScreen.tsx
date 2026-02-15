@@ -22,13 +22,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ teamMembers, onLogin }) => {
 
       <div className="w-full max-w-5xl z-10 animate-in fade-in zoom-in duration-700">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-600 rounded-[2rem] text-white font-black text-3xl shadow-2xl shadow-indigo-500/20 mb-8 border border-white/10">D</div>
-          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tighter mb-4">DEK FlowRequest</h1>
-          <p className="text-slate-400 font-medium text-lg uppercase tracking-widest">Vyberte svou identitu pro vstup do systému</p>
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-600 rounded-[2rem] text-white font-black text-3xl shadow-2xl shadow-indigo-500/20 mb-8 border border-white/10">S</div>
+          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tighter mb-4">DEK Snap</h1>
+          <p className="text-slate-400 font-medium text-lg uppercase tracking-widest">Okamžitý vhled. Okamžitá akce.</p>
         </div>
 
         <div className="space-y-12">
-          {/* Staff Section (Moved to Top) */}
+          {/* Staff Section */}
           <div className="space-y-6">
             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-4 px-4">
               Uživatelé <span className="flex-1 h-px bg-slate-800" />
@@ -53,7 +53,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ teamMembers, onLogin }) => {
             </div>
           </div>
 
-          {/* Admin Section (Moved to Bottom) */}
+          {/* Admin Section */}
           <div className="space-y-6">
             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-4 px-4">
               Administrace <span className="flex-1 h-px bg-slate-800" />

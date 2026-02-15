@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing for EmailService import to match class name and intended file casing to resolve casing discrepancy error
-import { processTaskEmailAutomation } from '../services/EmailService.ts';
+// Fix: Corrected import casing to match services/emailService.ts
+import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 import TermButton from './TermButton.tsx';
 
@@ -452,14 +453,14 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
         {isSending && (
           <div className={`fixed inset-0 z-[110] flex flex-col items-center justify-center p-8 text-center bg-slate-900/95`}>
             <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-6" />
-            <h3 className="text-2xl font-black mb-2 uppercase tracking-tight text-white">Probíhá distribuce...</h3>
+            <h3 className="text-2xl font-black mb-2 uppercase tracking-tight text-white">Probíhá distribuce Snapu...</h3>
             <div className="w-full max-w-sm h-2.5 bg-white/10 rounded-full overflow-hidden shadow-inner"><div className="bg-indigo-600 h-full transition-all duration-300" style={{ width: `${sendProgress}%` }} /></div>
           </div>
         )}
 
         <header className={`px-4 sm:px-6 h-16 lg:h-24 lg:px-12 border-b flex justify-between items-center sticky top-0 z-20 shrink-0 ${isDarkMode ? 'bg-slate-900/90 border-white/5 backdrop-blur-xl' : 'bg-white border-slate-100 backdrop-blur-xl'}`}>
           <div className="flex items-center gap-6">
-            <h2 className="text-lg sm:text-xl lg:text-3xl font-black tracking-tighter uppercase whitespace-nowrap">{modalMode === 'WORKFLOW' ? `Nové Flow` : `AI Analýza`}</h2>
+            <h2 className="text-lg sm:text-xl lg:text-3xl font-black tracking-tighter uppercase whitespace-nowrap">{modalMode === 'WORKFLOW' ? `Nový Snap` : `AI Analýza`}</h2>
             <div className={`hidden sm:flex p-1.5 rounded-2xl border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200 shadow-sm'}`}>
               <button onClick={() => setModalMode('WORKFLOW')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${modalMode === 'WORKFLOW' ? 'bg-indigo-600 text-white shadow-xl scale-105 z-10' : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-800')}`}>Workflow</button>
               <button onClick={() => setModalMode('ANALYSIS')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${modalMode === 'ANALYSIS' ? 'bg-violet-600 text-white shadow-xl scale-105 z-10' : (isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-800')}`}>Analýza</button>
@@ -472,7 +473,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
           <div className="max-w-7xl mx-auto p-4 sm:p-8 lg:p-12 space-y-10 lg:space-y-14">
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Vstupní zadání (AI Asistent)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Vstupní zadání (AI Snap Asistent)</label>
                 <div className="flex flex-wrap items-center gap-4">
                   {modalMode === 'WORKFLOW' && (
                     <div className="flex items-center gap-3">
@@ -531,7 +532,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                     {modalMode === 'WORKFLOW' && (
                       <button onClick={handleAddTaskManually} className={`flex-1 sm:flex-none h-14 px-8 flex items-center justify-center gap-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all border ${isDarkMode ? 'bg-slate-800 border-white/20 text-slate-200 hover:bg-slate-700 hover:border-white/30' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 shadow-sm'}`}><Plus className="w-5 h-5" /> Přidat úkol</button>
                     )}
-                    <button onClick={handleAIAnalyze} disabled={isAnalyzing || (!description.trim() && !selectedImage)} className={`flex-[2] sm:flex-none h-14 px-10 flex items-center justify-center gap-3 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-30 ${modalMode === 'WORKFLOW' ? 'bg-indigo-600 shadow-xl shadow-indigo-600/30' : 'bg-violet-600 shadow-xl shadow-violet-600/30'}`}>{isAnalyzing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6 fill-current" />}{isAnalyzing ? 'Zpracovávám...' : (modalMode === 'WORKFLOW' ? 'Vytvořit Flow' : 'AI Analýza')}</button>
+                    <button onClick={handleAIAnalyze} disabled={isAnalyzing || (!description.trim() && !selectedImage)} className={`flex-[2] sm:flex-none h-14 px-10 flex items-center justify-center gap-3 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-30 ${modalMode === 'WORKFLOW' ? 'bg-indigo-600 shadow-xl shadow-indigo-600/30' : 'bg-violet-600 shadow-xl shadow-violet-600/30'}`}>{isAnalyzing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6 fill-current" />}{isAnalyzing ? 'Zpracovávám...' : (modalMode === 'WORKFLOW' ? 'Vytvořit Snap' : 'AI Analýza')}</button>
                   </div>
                 </div>
               </div>
@@ -541,7 +542,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
               {modalMode === 'ANALYSIS' && pureAnalysisResult && (
                 <div className={`p-8 lg:p-16 rounded-[3rem] border-2 relative overflow-hidden ${isDarkMode ? 'bg-slate-900 border-violet-500/20 shadow-2xl shadow-indigo-500/5' : 'bg-white border-violet-100 shadow-2xl'}`}>
                    <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Zap className="w-48 h-48 text-violet-500" /></div>
-                   <div className="flex items-center gap-6 mb-12"><div className="w-14 h-14 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-xl"><Sparkles className="w-7 h-7" /></div><h3 className="text-3xl font-black tracking-tighter uppercase">Výsledek AI Analýzy</h3></div>
+                   <div className="flex items-center gap-6 mb-12"><div className="w-14 h-14 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-xl"><Sparkles className="w-7 h-7" /></div><h3 className="text-3xl font-black tracking-tighter uppercase">Výsledek AI Snap Analýzy</h3></div>
                    <div className={`prose prose-lg max-w-none font-medium leading-relaxed whitespace-pre-wrap mb-12 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{pureAnalysisResult}</div>
                    <div className="flex justify-end gap-3 pt-8 border-t border-slate-100 dark:border-white/5"><button onClick={handleSaveToHistory} disabled={isSaved} className={`h-14 px-8 rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 transition-all ${isSaved ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>{isSaved ? <Check /> : <History />} {isSaved ? 'Uloženo' : 'Uložit'}</button><button onClick={handleCopyResult} className="h-14 px-10 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 shadow-xl transition-all active:scale-95">{isCopied ? <Check /> : <Check />} {isCopied ? 'Zkopírováno' : 'Kopírovat'}</button></div>
                 </div>
@@ -578,7 +579,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
         <footer className={`p-8 lg:px-12 border-t flex flex-col sm:flex-row justify-between items-center gap-6 sticky bottom-0 z-30 shrink-0 ${isDarkMode ? 'bg-slate-950/95 backdrop-blur-md border-white/5 shadow-[0_-20px_50px_-10px_rgba(0,0,0,0.5)]' : 'bg-white/95 backdrop-blur-md border-slate-100 shadow-[0_-20px_50px_-10px_rgba(0,0,0,0.08)]'}`}>
           <button onClick={onClose} className="hidden sm:block h-14 px-12 font-black uppercase tracking-widest text-[11px] text-slate-400 hover:text-slate-900 transition-colors">Zahodit a zrušit</button>
           {modalMode === 'WORKFLOW' && subTasks.length > 0 && (
-            <button disabled={!title || isSending} onClick={handleSave} className="w-full sm:w-auto h-16 px-16 bg-indigo-600 text-white font-black rounded-3xl shadow-2xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-6 text-sm uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30">ROZESLAT ÚKOLY TÝMU <MailCheck className="w-7 h-7" /></button>
+            <button disabled={!title || isSending} onClick={handleSave} className="w-full sm:w-auto h-16 px-16 bg-indigo-600 text-white font-black rounded-3xl shadow-2xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-6 text-sm uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30">ROZESLAT SNAP ÚKOLY <MailCheck className="w-7 h-7" /></button>
           )}
         </footer>
       </div>

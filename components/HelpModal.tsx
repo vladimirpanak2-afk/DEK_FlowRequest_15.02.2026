@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X, BrainCircuit, Mail, Target, BookOpen, Sparkles, Layers, FileSearch, MessageSquareText, Zap, CheckCircle2 } from 'lucide-react';
 
@@ -19,7 +20,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose, isDarkMode }) => {
             </div>
             <div>
               <h2 className={`text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Centrum nápovědy</h2>
-              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Jak efektivně využívat FlowRequest</p>
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Jak efektivně využívat DEK Snap</p>
             </div>
           </div>
           <button onClick={onClose} className={`h-12 w-12 flex items-center justify-center rounded-2xl transition-all ${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-slate-100'}`}>
@@ -36,7 +37,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose, isDarkMode }) => {
                 <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
                   <Layers className="w-5 h-5" />
                 </div>
-                <h3 className={`text-xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Režim Workflow</h3>
+                <h3 className={`text-xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Režim Snap Workflow</h3>
               </div>
               
               <div className="space-y-6">
@@ -45,7 +46,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose, isDarkMode }) => {
                     <BrainCircuit className="w-5 h-5 text-indigo-500" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>1. Chytré zadání</h4>
+                    <h4 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>1. Okamžité zadání</h4>
                     <p className={`text-xs font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Nadiktujte hlasem nebo vyfoťte náčrt. AI automaticky vytvoří úkoly a rozpozná kompetence kolegů.</p>
                   </div>
                 </div>
@@ -55,7 +56,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose, isDarkMode }) => {
                     <Mail className="w-5 h-5 text-indigo-500" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>2. SMTP Distribuce</h4>
+                    <h4 className={`text-sm font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>2. Distribuce Snapu</h4>
                     <p className={`text-xs font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Systém odešle reálné e-maily kolegům s plným kontextem. Ti mohou odpovědět přímo z Outlooku.</p>
                   </div>
                 </div>
@@ -78,7 +79,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose, isDarkMode }) => {
                 <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-600/20">
                   <Sparkles className="w-5 h-5" />
                 </div>
-                <h3 className={`text-xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Režim Analýza</h3>
+                <h3 className={`text-xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Režim AI Analýza</h3>
               </div>
 
               <div className="space-y-6">
@@ -134,7 +135,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose, isDarkMode }) => {
 
         <div className={`p-8 shrink-0 border-t ${isDarkMode ? 'border-white/5 bg-slate-950/30' : 'border-slate-100 bg-slate-50'}`}>
           <button onClick={onClose} className={`w-full h-16 font-black rounded-3xl transition-all text-xs uppercase tracking-[0.2em] shadow-2xl active:scale-95 ${isDarkMode ? 'bg-white text-slate-900 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-black'}`}>
-            ROZUMÍM, JDU TESTOVAT
+            ROZUMÍM, JDU SNAPHNOUT ÚKOL
           </button>
         </div>
       </div>

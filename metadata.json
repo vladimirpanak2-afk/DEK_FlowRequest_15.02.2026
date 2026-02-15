@@ -1,6 +1,6 @@
 {
-  "name": "DEK_FlowRequest_15.02.2026",
-  "description": "An internal workflow management application designed to break down complex projects into actionable sub-tasks, assign them to the right people, and track their progress in real-time.",
+  "name": "DEK_Snap_15.02.2026",
+  "description": "Internal AI assistant for DEK employees. Snaps photos, voices, and texts to instantly create workflows or provide deep analysis.",
   "requestFramePermissions": [
     "camera",
     "microphone"

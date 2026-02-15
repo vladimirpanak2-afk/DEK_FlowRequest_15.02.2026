@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import FlowCard from './components/FlowCard.tsx';
@@ -90,7 +91,7 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    setNotification(`Vítejte zpět, ${user.name}!`);
+    setNotification(`Vítejte zpět v DEK Snap, ${user.name}!`);
   };
 
   const handleLogout = () => {
@@ -184,7 +185,7 @@ const App: React.FC = () => {
     setFlows([initializedFlow, ...flows]);
     closeNewFlow();
     setSelectedFlowId(newFlow.id);
-    setNotification(`Zakázka "${newFlow.title}" vytvořena.`);
+    setNotification(`Snap "${newFlow.title}" vytvořen.`);
     setViewMode('mine');
   };
 
@@ -252,7 +253,7 @@ const App: React.FC = () => {
   const MobileBottomNav = () => (
     <nav className={`lg:hidden fixed bottom-0 left-0 right-0 h-20 border-t flex justify-around items-center z-40 pb-2 ${isDarkMode ? 'bg-slate-950/90 border-white/5 backdrop-blur-md' : 'bg-white/90 border-slate-200 backdrop-blur-md'}`}>
       {[
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-indigo-600' },
+        { id: 'dashboard', label: 'Snaps', icon: LayoutDashboard, color: 'text-indigo-600' },
         { id: 'analyses', label: 'Analyses', icon: Sparkles, color: 'text-violet-600' },
         { id: 'ai-tips', label: 'Tips', icon: Zap, color: 'text-amber-500' },
         { id: 'team', label: 'Tým', icon: Users, adminOnly: true, color: 'text-slate-600' },
@@ -298,8 +299,8 @@ const App: React.FC = () => {
               <Menu className="w-6 h-6" />
             </button>
             <div className="hidden sm:flex items-center gap-3">
-               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 shrink-0">D</div>
-               <span className={`font-black tracking-tight text-xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>DEK FlowRequest</span>
+               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 shrink-0">S</div>
+               <span className={`font-black tracking-tight text-xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>DEK Snap</span>
             </div>
             <div className={`flex flex-col justify-center border-l pl-4 lg:hidden ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`}>
               <div className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
@@ -319,7 +320,7 @@ const App: React.FC = () => {
                 className={`flex items-center justify-center px-6 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl transition-all group active:scale-95 ${isDarkMode ? 'shadow-indigo-600/20' : 'shadow-indigo-600/10'}`}
               >
                 <PlusCircle className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" /> 
-                <span className="ml-3 text-[10px] font-black uppercase tracking-widest">Nové Flow</span>
+                <span className="ml-3 text-[10px] font-black uppercase tracking-widest">Nový Snap</span>
               </button>
               <button 
                 onClick={() => openNewFlow('text', 'ANALYSIS')} 
@@ -351,7 +352,7 @@ const App: React.FC = () => {
             <div className={`absolute left-0 top-0 bottom-0 w-80 p-8 shadow-2xl flex flex-col gap-8 animate-in slide-in-from-left duration-300 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black">D</div>
+                  <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black">S</div>
                   <h3 className="text-xl font-black tracking-tight">Menu</h3>
                 </div>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-xl hover:bg-white/5 transition-all"><X className="w-6 h-6" /></button>
@@ -392,6 +393,7 @@ const App: React.FC = () => {
                   <span className="text-xs font-black uppercase tracking-widest">{isDarkMode ? 'Denní režim' : 'Noční režim'}</span>
                   {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
+                {/* Fix: Changed handleLogout prop to onClick */}
                 <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 p-5 bg-red-500/10 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest">
                   <LogOut className="w-5 h-5" /> Odhlásit se
                 </button>
@@ -432,7 +434,7 @@ const App: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                   <h2 className={`text-3xl sm:text-5xl font-black tracking-tighter flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                     <Layers className={`w-8 h-8 ${isDarkMode ? 'text-white/20' : 'text-slate-200'}`} /> 
-                    {viewMode === 'mine' ? 'Moje Flow' : 'Týmové Flow'}
+                    {viewMode === 'mine' ? 'Moje Snaps' : 'Týmové Snaps'}
                   </h2>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -467,10 +469,10 @@ const App: React.FC = () => {
                 <div className="max-w-7xl mx-auto space-y-12 py-10 animate-in fade-in zoom-in duration-1000">
                   <div className="text-center space-y-4">
                     <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
-                      <Sparkles className="w-4 h-4 animate-pulse" /> Začněte nové Flow
+                      <Sparkles className="w-4 h-4 animate-pulse" /> Začněte nový Snap
                     </div>
                     <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Jak dnes zadáte práci?</h2>
-                    <p className={`text-lg font-medium max-w-2xl mx-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Vyberte si jeden ze způsobů zadání. AI asistent se postará o zbytek.</p>
+                    <p className={`text-lg font-medium max-w-2xl mx-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Okamžitý vhled. Okamžitá akce. AI asistent se postará o zbytek.</p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -520,8 +522,8 @@ const App: React.FC = () => {
                   <div className="inline-flex items-center gap-3 px-4 py-2 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-amber-500/20">
                     <Zap className="w-4 h-4 fill-current" /> AI Power User Guide
                   </div>
-                  <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Mistrovství s AI</h2>
-                  <p className="text-xl font-medium text-slate-400 leading-relaxed">Nepřemýšlejte nad formou. Čím přirozeněji zadáte úkol, tím lépe ho Gemini pochopí. Zde je návod, jak ovládnout DEK FlowRequest jako profík.</p>
+                  <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Mistrovství s AI Snap</h2>
+                  <p className="text-xl font-medium text-slate-400 leading-relaxed">Nepřemýšlejte nad formou. Čím přirozeněji zadáte úkol, tím lépe ho Gemini pochopí. Zde je návod, jak ovládnout DEK Snap jako profík.</p>
                 </div>
               </div>
 
@@ -534,7 +536,7 @@ const App: React.FC = () => {
                     color: "bg-blue-500"
                   },
                   {
-                    title: "Vision Power",
+                    title: "Vision Snap",
                     desc: "Nahrajte fotku ručního náčrtu ze stavby. AI vyextrahuje položky a vytvoří z nich strukturovaný seznam úkolů za vás.",
                     icon: Camera,
                     color: "bg-emerald-500"

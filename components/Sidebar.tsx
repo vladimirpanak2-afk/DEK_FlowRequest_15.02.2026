@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Users, BrainCircuit, Sun, Moon, LogOut, X, Zap, Calendar as CalendarIcon, Cloud, CloudRain, CloudSun, Info, Clock, Sparkles } from 'lucide-react';
 import { User } from '../types.ts';
@@ -66,14 +67,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-6 h-full flex flex-col relative z-10 overflow-hidden">
         {/* LOGO SECTION */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20 shrink-0">D</div>
-          <h1 className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>DEK FlowRequest</h1>
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20 shrink-0">S</div>
+          <h1 className={`text-lg font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>DEK Snap</h1>
         </div>
 
         {/* PERMANENT DATE BLOCK */}
         <div className={`p-4 rounded-2xl mb-8 border transition-all ${isDarkMode ? 'bg-white/5 border-white/5 shadow-inner' : 'bg-slate-50 border-slate-100'}`}>
           <div className="flex items-center justify-between mb-2">
-            <div className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            <div className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>
               {now.toLocaleDateString('cs-CZ', { weekday: 'long' })}
             </div>
             <div className="flex items-center gap-2">
