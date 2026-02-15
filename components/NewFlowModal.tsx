@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase } from 'lucide-react';
+import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing of import to match file name in the project - using lowercase 'e' to be consistent
-import { processTaskEmailAutomation } from '../services/emailService.ts';
+// Fixed casing of import to match file name in the project (EmailService.ts)
+import { processTaskEmailAutomation } from '../services/EmailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
 interface NewFlowModalProps {
@@ -25,6 +25,13 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
   onClose, onSave, onSaveAnalysis, mappings, setMappings, initialDescription = '', 
   initialMode, initialModalMode = 'WORKFLOW', teamMembers, setTeamMembers, currentUser, isDarkMode 
 }) => {
+  const getDeadlineDate = (urgency: 'NORMAL' | 'URGENT') => {
+    const date = new Date();
+    const daysToAdd = urgency === 'URGENT' ? 2 : 7;
+    date.setDate(date.getDate() + daysToAdd);
+    return date.toISOString().split('T')[0];
+  };
+
   const [description, setDescription] = useState(initialDescription);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -32,7 +39,8 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
   const [sendProgress, setSendProgress] = useState(0);
   const [title, setTitle] = useState('');
   const [subTasks, setSubTasks] = useState<Partial<SubRequest>[]>([]);
-  const [priority, setPriority] = useState<'NORMAL' | 'URGENT'>('NORMAL');
+  const [priority, setPriority] = useState<'NORMAL' | 'URGENT' | 'CUSTOM'>('NORMAL');
+  const [globalDeadline, setGlobalDeadline] = useState(getDeadlineDate('NORMAL'));
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   
   const [modalMode, setModalMode] = useState<'WORKFLOW' | 'ANALYSIS'>(initialModalMode);
@@ -112,13 +120,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     } catch { alert("Chyba fotoaparátu."); }
   };
   const stopCamera = () => { if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop()); setIsCameraActive(false); };
-  
-  const getDeadlineDate = (urgency: 'NORMAL' | 'URGENT') => {
-    const date = new Date();
-    const daysToAdd = urgency === 'URGENT' ? 2 : 7;
-    date.setDate(date.getDate() + daysToAdd);
-    return date.toISOString().split('T')[0];
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,9 +135,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
   };
 
   const handleAddTaskManually = () => {
-    const enforcedDeadline = getDeadlineDate(priority);
-    
-    // Nová logika pro předvyplnění na základě obsahu hlavního pole
+    // Použijeme globálně nastavený termín
     const mainContent = (description + interimTranscript).trim();
     const suggestedTitle = mainContent ? (mainContent.split(/[.!?\n]/)[0].substring(0, 60)) : '';
     const suggestedDesc = mainContent || '';
@@ -149,11 +148,10 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
       assigned_role_key: '',
       isBroadcast: false,
       status: 'PENDING' as Status,
-      dueDate: enforcedDeadline,
+      dueDate: globalDeadline,
       assigneeId: ''
     };
     
-    // Pokud ještě nemáme název celého flow, nastavíme ho podle první věty
     if (!title && suggestedTitle) setTitle(suggestedTitle);
     else if (!title) setTitle('Nová zakázka');
 
@@ -174,10 +172,9 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
         setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
       } else {
         const result = selectedImage 
-          ? await analyzeDocumentVision(selectedImage, imageMimeType, mappings, currentUser, priority, finalDesc)
-          : await analyzeTaskBreakdown(finalDesc, mappings, currentUser, priority);
+          ? await analyzeDocumentVision(selectedImage, imageMimeType, mappings, currentUser, priority === 'CUSTOM' ? 'NORMAL' : priority, finalDesc)
+          : await analyzeTaskBreakdown(finalDesc, mappings, currentUser, priority === 'CUSTOM' ? 'NORMAL' : priority);
         
-        const enforcedDeadline = getDeadlineDate(priority);
         if (!title) setTitle(result.title);
         
         const newAISubTasks: Partial<SubRequest>[] = result.suggestedSubTasks.map((st, idx) => ({
@@ -188,7 +185,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
           assigned_role_key: st.estimatedRoleKey,
           isBroadcast: st.targetScope === 'ROLE_ALL',
           status: 'PENDING' as Status,
-          dueDate: enforcedDeadline,
+          dueDate: globalDeadline, // Vždy respektujeme globálně vybraný termín z modálu
           assigneeId: st.targetScope === 'ROLE_ALL' 
             ? `ROLE_${st.estimatedRoleKey}` 
             : teamMembers.find(m => m.role_key === st.estimatedRoleKey)?.id || ''
@@ -242,12 +239,9 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     const flowId = `f-${Date.now()}`;
     const finalTasks: SubRequest[] = [];
     
-    // Fan-out distribution logic with Category Support
     for (let i = 0; i < subTasks.length; i++) {
       const st = subTasks[i];
       if (st.isBroadcast) {
-        // Find everyone in the target role or CATEGORY
-        // If assigned_role_key is e.g. 'OBCHODNIK', we match all 'OBCHODNIK_*'
         const isGeneric = !st.assigned_role_key?.includes('_');
         const usersInRole = teamMembers.filter(u => 
           isGeneric 
@@ -341,8 +335,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     };
 
     const selectedUser = teamMembers.find(m => m.id === task.assigneeId);
-    
-    // Logic for label displaying generic vs specific
     const getAssigneeLabel = () => {
       if (task.isBroadcast) {
         if (task.assigned_role_key === 'OBCHODNIK') return 'VŠICHNI OBCHODNÍCI';
@@ -385,7 +377,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                     </>
                   ) : (
                     <>
-                      {/* Generické možnosti navrchu */}
                       <div className="p-2 space-y-1">
                         <button onClick={() => handleSelect('ROLE_ALL_OBCHODNIK', true, 'OBCHODNIK')} className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 hover:bg-indigo-500/20`}>
                           <Users2 className="w-6 h-6" />
@@ -396,10 +387,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                           <div><div className="text-[10px] font-black uppercase tracking-widest">Všichni PM</div><div className="text-[9px] font-bold">Celoplošně (Všichni produktoví)</div></div>
                         </button>
                       </div>
-                      
                       <div className="h-px bg-slate-100 dark:bg-white/5 my-2" />
-
-                      {/* Konkrétní specializace */}
                       {Array.from(new Set(teamMembers.map(m => m.role_key))).map((rk: string) => {
                         const roleName = teamMembers.find(t => t.role_key === rk)?.role;
                         const isSelected = task.isBroadcast && task.assigned_role_key === rk;
@@ -484,9 +472,19 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Vstupní zadání (AI Asistent)</label>
                 <div className="flex flex-wrap items-center gap-4">
                   {modalMode === 'WORKFLOW' && (
-                    <div className={`flex items-center gap-4 border p-1 rounded-2xl ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-white shadow-sm'}`}>
-                      <button onClick={() => setPriority('NORMAL')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'NORMAL' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>Normální (7 dní)</button>
-                      <button onClick={() => setPriority('URGENT')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'URGENT' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400'}`}>Spěchá (2 dny)</button>
+                    <div className={`flex items-center gap-2 border p-1 rounded-2xl ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-white shadow-sm'}`}>
+                      <button onClick={() => { setPriority('NORMAL'); setGlobalDeadline(getDeadlineDate('NORMAL')); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'NORMAL' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>Normální</button>
+                      <button onClick={() => { setPriority('URGENT'); setGlobalDeadline(getDeadlineDate('URGENT')); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'URGENT' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400'}`}>Spěchá</button>
+                      <div className="h-4 w-px bg-slate-200 dark:bg-white/10 mx-1" />
+                      <div className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all ${priority === 'CUSTOM' ? (isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-700 shadow-sm') : 'hover:bg-slate-50 dark:hover:bg-white/5'}`}>
+                        <CalendarIcon className={`w-3.5 h-3.5 ${priority === 'CUSTOM' ? (isDarkMode ? 'text-amber-400' : 'text-amber-600') : 'text-indigo-500'}`} />
+                        <input 
+                          type="date" 
+                          value={globalDeadline} 
+                          onChange={(e) => { setGlobalDeadline(e.target.value); setPriority('CUSTOM'); }}
+                          className="bg-transparent text-[9px] font-black uppercase tracking-widest outline-none border-none p-0 cursor-pointer"
+                        />
+                      </div>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
