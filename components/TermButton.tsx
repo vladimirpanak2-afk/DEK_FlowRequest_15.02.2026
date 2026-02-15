@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, X, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, X, Check } from 'lucide-react';
 
 interface TermButtonProps {
   valueISO?: string;
@@ -12,14 +12,12 @@ interface TermButtonProps {
 const TermButton: React.FC<TermButtonProps> = ({ valueISO, onChangeISO, isDarkMode, className }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [tempDate, setTempDate] = useState('');
-  const [tempTime, setTempTime] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       const d = valueISO ? new Date(valueISO) : new Date();
       setTempDate(d.toISOString().split('T')[0]);
-      setTempTime(d.toTimeString().split(' ')[0].substring(0, 5));
     }
   }, [isOpen, valueISO]);
 
@@ -39,15 +37,14 @@ const TermButton: React.FC<TermButtonProps> = ({ valueISO, onChangeISO, isDarkMo
     return `TERMÍN: ${d.toLocaleString('cs-CZ', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     })}`;
   }, [valueISO]);
 
   const handleSave = () => {
     if (!tempDate) return;
-    const combined = new Date(`${tempDate}T${tempTime || '00:00'}`);
+    // Vytvoříme datum z vybraného dne (čas se nastaví na půlnoc)
+    const combined = new Date(tempDate);
     onChangeISO(combined.toISOString());
     setIsOpen(false);
   };
@@ -89,19 +86,6 @@ const TermButton: React.FC<TermButtonProps> = ({ valueISO, onChangeISO, isDarkMo
                 type="date"
                 value={tempDate}
                 onChange={(e) => setTempDate(e.target.value)}
-                className={`w-full px-3 py-2 rounded-lg border text-xs font-bold outline-none ${
-                  isDarkMode ? 'bg-slate-800 border-white/5 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                }`}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1 flex items-center gap-2">
-                <Clock className="w-3 h-3" /> Čas
-              </label>
-              <input
-                type="time"
-                value={tempTime}
-                onChange={(e) => setTempTime(e.target.value)}
                 className={`w-full px-3 py-2 rounded-lg border text-xs font-bold outline-none ${
                   isDarkMode ? 'bg-slate-800 border-white/5 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                 }`}
