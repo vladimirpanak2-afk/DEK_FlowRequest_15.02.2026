@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing of import to match file name in the project
-import { processTaskEmailAutomation } from '../services/EmailService.ts';
+// Fixed casing of import to match file name in the project - using lowercase 'e' to be consistent
+import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
 interface NewFlowModalProps {
@@ -135,10 +135,16 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
 
   const handleAddTaskManually = () => {
     const enforcedDeadline = getDeadlineDate(priority);
+    
+    // Nová logika pro předvyplnění na základě obsahu hlavního pole
+    const mainContent = (description + interimTranscript).trim();
+    const suggestedTitle = mainContent ? (mainContent.split(/[.!?\n]/)[0].substring(0, 60)) : '';
+    const suggestedDesc = mainContent || '';
+
     const newTask: Partial<SubRequest> = {
       id: `manual-${Date.now()}`,
-      title: '',
-      description: '',
+      title: suggestedTitle,
+      description: suggestedDesc,
       task_type: 'MANUÁLNÍ',
       assigned_role_key: '',
       isBroadcast: false,
@@ -146,7 +152,11 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
       dueDate: enforcedDeadline,
       assigneeId: ''
     };
-    if (!title) setTitle('Nová zakázka');
+    
+    // Pokud ještě nemáme název celého flow, nastavíme ho podle první věty
+    if (!title && suggestedTitle) setTitle(suggestedTitle);
+    else if (!title) setTitle('Nová zakázka');
+
     setSubTasks(prev => [...prev, newTask]);
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
   };
