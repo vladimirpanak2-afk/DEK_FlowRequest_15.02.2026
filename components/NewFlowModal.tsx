@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing of import to match file name in the project (EmailService.ts)
-import { processTaskEmailAutomation } from '../services/EmailService.ts';
+// Fixed casing of import to match file name in the project (emailService.ts)
+import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
 interface NewFlowModalProps {
@@ -60,6 +60,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
   const resultsRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const adjustTextareaHeight = (element: HTMLTextAreaElement | null) => {
     if (element) {
@@ -135,7 +136,6 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
   };
 
   const handleAddTaskManually = () => {
-    // Použijeme globálně nastavený termín
     const mainContent = (description + interimTranscript).trim();
     const suggestedTitle = mainContent ? (mainContent.split(/[.!?\n]/)[0].substring(0, 60)) : '';
     const suggestedDesc = mainContent || '';
@@ -185,7 +185,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
           assigned_role_key: st.estimatedRoleKey,
           isBroadcast: st.targetScope === 'ROLE_ALL',
           status: 'PENDING' as Status,
-          dueDate: globalDeadline, // Vždy respektujeme globálně vybraný termín z modálu
+          dueDate: globalDeadline, 
           assigneeId: st.targetScope === 'ROLE_ALL' 
             ? `ROLE_${st.estimatedRoleKey}` 
             : teamMembers.find(m => m.role_key === st.estimatedRoleKey)?.id || ''
@@ -315,7 +315,8 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
         id: newUserId,
         name: newUserName,
         email: newUserEmail,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newUserName)}`,
+        // Fixed: Use 'newUserName' instead of undefined 'formData.name'
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newUserName || 'User')}`,
         role: newUserRole,
         role_key: roleKey,
         isAdmin: false
@@ -476,15 +477,30 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
                       <button onClick={() => { setPriority('NORMAL'); setGlobalDeadline(getDeadlineDate('NORMAL')); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'NORMAL' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>Normální</button>
                       <button onClick={() => { setPriority('URGENT'); setGlobalDeadline(getDeadlineDate('URGENT')); }} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${priority === 'URGENT' ? 'bg-red-600 text-white shadow-md' : 'text-slate-400'}`}>Spěchá</button>
                       <div className="h-4 w-px bg-slate-200 dark:bg-white/10 mx-1" />
-                      <div className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all ${priority === 'CUSTOM' ? (isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-700 shadow-sm') : 'hover:bg-slate-50 dark:hover:bg-white/5'}`}>
-                        <CalendarIcon className={`w-3.5 h-3.5 ${priority === 'CUSTOM' ? (isDarkMode ? 'text-amber-400' : 'text-amber-600') : 'text-indigo-500'}`} />
+                      
+                      {/* Vylepšený kalendář - celý kontejner je klikatelný label */}
+                      <label 
+                        onClick={(e) => {
+                          const input = e.currentTarget.querySelector('input');
+                          if (input && 'showPicker' in input) {
+                            try { input.showPicker(); } catch (err) {}
+                          }
+                        }}
+                        className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all ${
+                          priority === 'CUSTOM' 
+                            ? (isDarkMode ? 'bg-amber-500/20 text-amber-400 shadow-[0_0_15px_-5px_rgba(245,158,11,0.3)]' : 'bg-amber-50 text-amber-700 shadow-sm border-amber-200 border') 
+                            : (isDarkMode ? 'hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-400' : 'hover:bg-indigo-50 text-slate-500 hover:text-indigo-600')
+                        }`}
+                      >
+                        <CalendarIcon className={`w-3.5 h-3.5 ${priority === 'CUSTOM' ? (isDarkMode ? 'text-amber-400' : 'text-amber-600') : (isDarkMode ? 'text-slate-500' : 'text-indigo-500')}`} />
                         <input 
+                          ref={dateInputRef}
                           type="date" 
                           value={globalDeadline} 
                           onChange={(e) => { setGlobalDeadline(e.target.value); setPriority('CUSTOM'); }}
-                          className="bg-transparent text-[9px] font-black uppercase tracking-widest outline-none border-none p-0 cursor-pointer"
+                          className="bg-transparent text-[9px] font-black uppercase tracking-widest outline-none border-none p-0 cursor-pointer w-full"
                         />
-                      </div>
+                      </label>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
