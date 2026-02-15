@@ -8,7 +8,6 @@ export const performPureAnalysis = async (
   input: string,
   image?: { data: string, mimeType: string }
 ): Promise<string> => {
-  // Fresh instance per call as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const parts: any[] = [];
   if (image) {
@@ -24,7 +23,6 @@ export const performPureAnalysis = async (
     contents: { parts },
     config: { temperature: 0.2 }
   });
-  // response.text is a property, not a method
   return response.text || "Analýza nevrátila žádný výsledek.";
 };
 
@@ -35,7 +33,6 @@ export const analyzeTaskBreakdown = async (
   currentUser: User,
   priority: 'NORMAL' | 'URGENT' = 'NORMAL'
 ): Promise<AIAnalysisResult> => {
-  // Fresh instance per call as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const roleRules = TEAM_MEMBERS.map(tm => `${tm.role_key}:${tm.role}`).join('|');
   const mappingRules = mappings.map(m => {
@@ -45,19 +42,17 @@ export const analyzeTaskBreakdown = async (
 
   const prompt = `
     Jsi AI dispečer pro aplikaci FlowRequest v obchodní firmě (DEK). 
-    Autorem požadavku je často OZ (Obchodník), který koordinuje zakázku a deleguje úkoly na specialisty.
     Zadavatel: ${currentUser.name}, Role: ${currentUser.role_key}.
     
-    PRAVIDLA DELEGOVÁNÍ:
-    1. PROVOZNÍ TECHNIK (role PROVOZNI_TECHNIK) řeší: Technické výpočty, výkazy výměr, výpočty spotřeby lepidel/omítek/cihel podle projektové dokumentace.
-    2. PRODUKT MANAŽEŘI (role PM_*) řeší: Vyjednávání nákupních cen s výrobci (např. Wienerberger, Knauf), schvalování OBJEKTOVÝCH SLEV, marže, dostupnost zboží u výrobce a logistiku expedice z výrobního závodu. Také řeší zajištění vzorkovníků od výrobců.
-    3. OBCHODNÍCI (role OBCHODNIK_*) řeší: Samotný prodej klientovi, tvorbu finálních nabídek, komunikaci se zákazníkem.
-    4. HROMADNÉ ÚKOLY (targetScope: 'ROLE_ALL'): Pokud zadavatel (např. Ředitel) žádá o "štiky", "schůzky", "CRM hlášení", vytvoř úkol pro roli OBCHODNIK_ZDIVO s příznakem ROLE_ALL.
+    DETEKCE HROMADNÝCH ÚKOLŮ (targetScope: 'ROLE_ALL'):
+    - Pokud uživatel použije slova jako "všem", "všichni", "celý tým", "každý", nastav targetScope na 'ROLE_ALL'.
+    - Příklad: "Všem obchodníkům: odevzdejte report" -> targetScope: 'ROLE_ALL', estimatedRoleKey: 'OBCHODNIK_ZDIVO' (nebo jiný relevantní obchodník).
+    - Příklad: "Všichni sádrokartonáři: prověřte ceny" -> targetScope: 'ROLE_ALL', estimatedRoleKey: 'PM_SADROKARTON'.
     
-    Příklad: 
-    - "Čestmíre spočítej spotřebu" -> PROVOZNI_TECHNIK
-    - "Bořku domluv u Wienerbergeru slevu a prověř expedici" -> PM_ZDIVOBETON
-    - "Lucko domluv vzorkovník omítek" -> PM_IZOLACE
+    PRAVIDLA DELEGOVÁNÍ:
+    1. PROVOZNÍ TECHNIK (role PROVOZNI_TECHNIK): Technické výpočty, výkazy výměr, spotřeba materiálu.
+    2. PRODUKT MANAŽEŘI (role PM_*): Nákupní ceny, OBJEKTOVÉ SLEVY, marže, dostupnost, vzorky.
+    3. OBCHODNÍCI (role OBCHODNIK_*): Prodej klientovi, finální nabídky, CRM aktivity (štiky, schůzky).
     
     Role: ${roleRules}
     Mapování: ${mappingRules}
@@ -97,7 +92,6 @@ export const analyzeTaskBreakdown = async (
   });
 
   try {
-    // response.text is a property, not a method
     const text = response.text || "{}";
     return JSON.parse(text.trim()) as AIAnalysisResult;
   } catch (e) {
@@ -114,14 +108,13 @@ export const analyzeDocumentVision = async (
   priority: 'NORMAL' | 'URGENT' = 'NORMAL',
   userText: string = ''
 ): Promise<AIAnalysisResult> => {
-  // Fresh instance per call as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
       parts: [
         { inlineData: { data: base64Image, mimeType: mimeType } },
-        { text: `Analyzuj dokument a text: "${userText}". Pokud jde o výpočty spotřeby, deleguj na PROVOZNI_TECHNIK. Pokud jde o slevy u výrobců nebo vzorky, deleguj na PM_*. Pokud jde o reporty schůzek/štiky od Ředitele, deleguj na všechny obchodníky (ROLE_ALL).` }
+        { text: `Analyzuj dokument a text: "${userText}". Pokud jde o hromadné oslovení celého týmu (všem, všichni), nastav targetScope na 'ROLE_ALL'. Jinak deleguj podle standardních kompetencí (výpočty -> technik, nákupky -> PM, prodej -> obchodník).` }
       ]
     },
     config: {
@@ -152,7 +145,6 @@ export const analyzeDocumentVision = async (
   });
 
   try {
-    // response.text is a property, not a method
     const text = response.text || "{}";
     return JSON.parse(text.trim()) as AIAnalysisResult;
   } catch (e) {
@@ -161,7 +153,6 @@ export const analyzeDocumentVision = async (
 };
 
 export const analyzeReply = async (replyText: string): Promise<{ summary: string, verdict: 'CONFIRMED' | 'REJECTED' | 'UNCLEAR' }> => {
-  // Fresh instance per call as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -179,7 +170,6 @@ export const analyzeReply = async (replyText: string): Promise<{ summary: string
     }
   });
   try {
-    // response.text is a property, not a method
     const text = response.text || '{"summary": "Chyba", "verdict": "UNCLEAR"}';
     return JSON.parse(text.trim());
   } catch (e) {

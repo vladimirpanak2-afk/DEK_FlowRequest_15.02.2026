@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fixed casing mismatch: already included file name 'file:///services/emailService.ts' differs from file name 'file:///services/EmailService.ts' only in casing.
-import { processTaskEmailAutomation } from '../services/EmailService.ts';
+// Fixed casing for service import to match file name on disk
+import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 
 interface NewFlowModalProps {
@@ -230,12 +231,21 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     setIsSending(true);
     const flowId = `f-${Date.now()}`;
     const finalTasks: SubRequest[] = [];
+    
+    // Fan-out distribution logic
     for (let i = 0; i < subTasks.length; i++) {
       const st = subTasks[i];
       if (st.isBroadcast) {
+        // Find everyone in the target role
         const usersInRole = teamMembers.filter(u => u.role_key === st.assigned_role_key);
         for (const user of usersInRole) {
-          const task: SubRequest = { ...st, id: `t-bc-${user.id}-${i}`, assigneeId: user.id } as SubRequest;
+          const task: SubRequest = { 
+            ...st, 
+            id: `t-bc-${user.id}-${i}-${Date.now()}`, 
+            assigneeId: user.id,
+            isBroadcast: true // Keep flag for individual tasks to show badge
+          } as SubRequest;
+          
           await processTaskEmailAutomation(task, { id: flowId, title, description, creatorId: currentUser.id, createdAt: '', tags: [], subRequests: [], status: 'ACTIVE' });
           finalTasks.push({ ...task, status: 'SENT' });
         }
@@ -246,6 +256,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
       }
       setSendProgress(((i + 1) / subTasks.length) * 100);
     }
+    
     onSave({ id: flowId, title, description, creatorId: currentUser.id, createdAt: new Date().toISOString(), tags: [priority === 'URGENT' ? 'Spěchá' : 'Normální'], subRequests: finalTasks, status: 'ACTIVE' });
   };
 

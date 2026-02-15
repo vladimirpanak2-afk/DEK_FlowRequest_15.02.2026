@@ -6,7 +6,7 @@ import {
   ListChecks, Mail, Send, MessageSquareText, Loader2, AtSign, 
   AlertTriangle, Eye, EyeOff, User as UserIcon, ChevronDown, 
   ChevronUp, Lock, UserCheck, Check, X as CloseIcon, ThumbsUp, ThumbsDown,
-  XCircle, CheckCircle, Info, Archive, X, Sparkles, Lightbulb
+  XCircle, CheckCircle, Info, Archive, X, Sparkles, Lightbulb, Users
 } from 'lucide-react';
 
 interface FlowDetailsProps {
@@ -21,7 +21,6 @@ interface FlowDetailsProps {
 
 const FlowDetails: React.FC<FlowDetailsProps> = ({ flow, onBack, onToggleStatus, onManualReply, teamMembers, isDarkMode, currentUser }) => {
   const [replyingTo, setReplyingTo] = useState<{ id: string, type: 'YES' | 'NO' | 'MSG' } | null>(null);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [manualReplyText, setManualReplyText] = useState('');
   const [isProcessingReply, setIsProcessingReply] = useState(false);
   const [expandedAiTips, setExpandedAiTips] = useState<Record<string, boolean>>({});
@@ -209,7 +208,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ flow, onBack, onToggleStatus,
                 <div className="p-8 lg:p-16">
                   <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-12">
                     <div className="flex-1 space-y-6 w-full">
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-4">
                         <span className={`text-[10px] font-black px-4 py-1.5 rounded-xl uppercase tracking-widest ${
                           isDone 
                             ? (isNegative ? 'bg-slate-700 text-slate-300' : 'bg-emerald-100 text-emerald-700') 
@@ -217,6 +216,11 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ flow, onBack, onToggleStatus,
                         }`}>
                           {sub.task_type}
                         </span>
+                        {sub.isBroadcast && (
+                          <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                            <Users className="w-3.5 h-3.5" /> Hromadný úkol
+                          </span>
+                        )}
                       </div>
                       <h4 className={`text-2xl lg:text-4xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'} ${isDone && isNegative ? 'text-slate-500' : ''}`}>{sub.title}</h4>
                       
