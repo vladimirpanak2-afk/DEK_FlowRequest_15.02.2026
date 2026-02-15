@@ -1,0 +1,8 @@
+{
+  "name": "DEK_FlowRequest_15.02.2026",
+  "description": "An internal workflow management application designed to break down complex projects into actionable sub-tasks, assign them to the right people, and track their progress in real-time.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
