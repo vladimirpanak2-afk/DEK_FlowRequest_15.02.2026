@@ -392,7 +392,7 @@ const App: React.FC = () => {
                   <span className="text-xs font-black uppercase tracking-widest">{isDarkMode ? 'Denní režim' : 'Noční režim'}</span>
                   {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
-                <button handleLogout={handleLogout} className="w-full flex items-center justify-center gap-3 p-5 bg-red-500/10 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest">
+                <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 p-5 bg-red-500/10 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest">
                   <LogOut className="w-5 h-5" /> Odhlásit se
                 </button>
               </div>
@@ -477,18 +477,19 @@ const App: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[
                       { id: 'scenarios', label: 'Ukázka', desc: 'Inspirujte se', icon: Lightbulb, color: 'bg-amber-500', action: () => setIsScenariosOpen(true) },
                       { id: 'voice', label: 'Diktování', desc: 'Mluvte přirozeně', icon: Mic, color: 'bg-red-500', action: () => openNewFlow('voice', 'WORKFLOW') },
                       { id: 'camera', label: 'Fotka', desc: 'Skenujte výkresy', icon: Camera, color: 'bg-indigo-600', action: () => openNewFlow('camera', 'WORKFLOW') },
                       { id: 'upload', label: 'Soubor', desc: 'Příloha k analýze', icon: Upload, color: 'bg-violet-600', action: () => openNewFlow('upload', 'WORKFLOW') },
                       { id: 'text', label: 'Text', desc: 'Detailní instrukce', icon: FileText, color: 'bg-emerald-600', action: () => openNewFlow('text', 'WORKFLOW') },
+                      { id: 'analysis', label: 'AI Analýza', desc: 'Detailní rozbor dat', icon: Sparkles, color: 'bg-violet-600', action: () => openNewFlow('text', 'ANALYSIS') },
                     ].map((tile) => (
                       <button 
                         key={tile.id}
                         onClick={tile.action}
-                        className={`group p-8 rounded-[2.5rem] border text-left transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20' : 'bg-white border-slate-200 hover:border-indigo-200'}`}
+                        className={`group p-8 rounded-[2.5rem] border text-left transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-white border-slate-200 hover:border-indigo-200'}`}
                       >
                         <div className={`w-16 h-16 rounded-2xl mb-8 flex items-center justify-center text-white shadow-xl transition-transform duration-500 group-hover:scale-110 ${tile.color}`}>
                           <tile.icon className="w-8 h-8" />
@@ -500,6 +501,15 @@ const App: React.FC = () => {
                         </div>
                       </button>
                     ))}
+                  </div>
+
+                  <div className="hidden lg:flex justify-center mt-12">
+                    <button 
+                      onClick={() => openNewFlow('text', 'ANALYSIS')}
+                      className={`h-20 px-20 flex items-center gap-6 bg-violet-600 text-white rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-sm transition-all shadow-2xl shadow-violet-600/30 active:scale-95 hover:bg-violet-700 hover:shadow-violet-600/40`}
+                    >
+                      <Sparkles className="w-7 h-7" /> AI ANALÝZA
+                    </button>
                   </div>
                 </div>
               ) : (

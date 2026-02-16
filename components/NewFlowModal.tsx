@@ -282,8 +282,8 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     const pickerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-      const handleClickOutside = (e: MouseEvent) => {
-        if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
           setOpenPickerId(null);
           setIsCreatingNew(false);
         }
