@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Flow, User, Status } from '../types.ts';
 import { Calendar, CheckCircle2, ShieldCheck, ShieldAlert, AlertCircle, ChevronRight, BarChart, Check, Archive, X } from 'lucide-react';
@@ -84,7 +85,7 @@ const FlowCard: React.FC<FlowCardProps> = ({ flow, onClick, teamMembers, isDarkM
         </div>
       </div>
 
-      {/* SECTION 2: Name List Instead of Avatars */}
+      {/* SECTION 2: Name List */}
       <div className="mb-6 lg:mb-0 lg:flex-[2] lg:px-6 relative z-10">
         <div className="flex flex-wrap gap-x-4 gap-y-2 mb-3">
           {flow.subRequests.map((sub) => {

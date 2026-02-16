@@ -11,9 +11,10 @@ import HelpModal from './components/HelpModal.tsx';
 import StaleFlowsBanner from './components/StaleFlowsBanner.tsx';
 import LoginScreen from './components/LoginScreen.tsx';
 import AIAnalysesArchive from './components/AIAnalysesArchive.tsx';
-import { INITIAL_FLOWS, TEAM_MEMBERS as INITIAL_TEAM, INITIAL_MAPPINGS, CONSTRUCTION_FACTS } from './constants.ts';
+import AIPowerTips from './components/AIPowerTips.tsx';
+import { INITIAL_FLOWS, TEAM_MEMBERS as INITIAL_TEAM, INITIAL_MAPPINGS } from './constants.ts';
 import { Flow, RoleMapping, User, FlowStatus, Status, SavedAnalysis } from './types.ts';
-import { Search, Bell, PlusCircle, Lightbulb, Menu, Layers, Sparkles, HelpCircle, User as UserIcon, Users, LayoutDashboard, BrainCircuit, Sun, Moon, LogOut, Mic, Camera, FileText, Zap, ArrowRight, X, Upload, HardHat, Truck, Shield, Package, LayoutGrid, UserCheck, PenTool, Ruler, Monitor, SquarePlus, Calendar as CalendarIcon, Clock, MessageSquarePlus, Info, FileSearch, Check, Copy } from 'lucide-react';
+import { Search, PlusCircle, Lightbulb, Menu, Layers, Sparkles, HelpCircle, User as UserIcon, Users, LayoutDashboard, Zap, Clock, X, Trash2, Mic, Camera, FileText, Upload, LayoutGrid, Info } from 'lucide-react';
 import { analyzeReply } from './services/geminiService.ts';
 
 const App: React.FC = () => {
@@ -23,7 +24,6 @@ const App: React.FC = () => {
     try { return JSON.parse(stored); } catch { return initial; }
   };
 
-  // State
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardFilter, setDashboardFilter] = useState<'to_action' | 'active' | 'archive'>('to_action');
   const [viewMode, setViewMode] = useState<'mine' | 'team'>('mine');
@@ -52,9 +52,7 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [showStaleBanner, setShowStaleBanner] = useState(true);
   const [now, setNow] = useState(new Date());
-  const [mobileFact, setMobileFact] = useState("");
 
-  // Persistence
   useEffect(() => localStorage.setItem('fr_flows', JSON.stringify(flows)), [flows]);
   useEffect(() => localStorage.setItem('fr_analyses', JSON.stringify(analyses)), [analyses]);
   useEffect(() => localStorage.setItem('fr_team', JSON.stringify(teamMembers)), [teamMembers]);
@@ -75,12 +73,6 @@ const App: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
-
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      setMobileFact(CONSTRUCTION_FACTS[Math.floor(Math.random() * CONSTRUCTION_FACTS.length)]);
-    }
-  }, [isMobileMenuOpen]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -113,6 +105,7 @@ const App: React.FC = () => {
     setModalInitialMode(null);
   };
 
+  // Úkoly delegované uživateli od ostatních (Tým)
   const pendingTeamTasksCount = useMemo(() => {
     if (!currentUser) return 0;
     return flows.reduce((count, flow) => {
@@ -126,40 +119,39 @@ const App: React.FC = () => {
     }, 0);
   }, [flows, currentUser]);
 
+  // Vlastní zakázky uživatele, kde někdo odpověděl a čeká se na schválení (Moje)
+  const pendingMyActionCount = useMemo(() => {
+    if (!currentUser) return 0;
+    return flows.filter(f => 
+      f.creatorId === currentUser.id && 
+      f.subRequests.some(s => s.status === 'NEEDS_REVIEW')
+    ).length;
+  }, [flows, currentUser]);
+
   const filteredFlows = useMemo(() => {
     let result = flows;
     if (!currentUser) return [];
 
     if (viewMode === 'mine') {
-      // Snaps, které jsem založil
       result = result.filter(f => f.creatorId === currentUser.id);
-      
       if (dashboardFilter === 'to_action') {
-        // Pouze ty, kde kolegové něco udělali a čeká se na mé schválení
         result = result.filter(f => f.subRequests.some(s => s.status === 'NEEDS_REVIEW'));
       } else if (dashboardFilter === 'active') {
-        // Vše co se zrovna děje (včetně čekání na kolegy)
         result = result.filter(f => f.status === 'ACTIVE');
       } else if (dashboardFilter === 'archive') {
-        // Kompletně uzavřené věci
         result = result.filter(f => f.status === 'COMPLETED');
       }
     } else {
-      // Snaps, kde mám já úkol od někoho jiného
       result = result.filter(f => f.subRequests.some(s => s.assigneeId === currentUser.id));
-      
       if (dashboardFilter === 'to_action') {
-        // Pouze ty, kde mám ROZPRACOVANÝ úkol, který jsem ještě neodeslal
         result = result.filter(f => f.subRequests.some(s => 
           s.assigneeId === currentUser.id && 
           s.status !== 'DONE' && 
           s.status !== 'NEEDS_REVIEW'
         ));
       } else if (dashboardFilter === 'active') {
-        // Vše v čem figuruji a ještě není hotovo
         result = result.filter(f => f.status === 'ACTIVE');
       } else if (dashboardFilter === 'archive') {
-        // Uzavřené projekty, kde jsem byl zapojen
         result = result.filter(f => f.status === 'COMPLETED');
       }
     }
@@ -168,8 +160,7 @@ const App: React.FC = () => {
       const q = searchQuery.toLowerCase();
       result = result.filter(f => 
         f.title.toLowerCase().includes(q) || 
-        f.description.toLowerCase().includes(q) ||
-        f.tags.some(t => t.toLowerCase().includes(q))
+        f.description.toLowerCase().includes(q)
       );
     }
     return result;
@@ -187,107 +178,101 @@ const App: React.FC = () => {
     });
   }, [flows, currentUser]);
 
-  const updateFlowStatus = (flow: Flow): Flow => {
-    const allDone = flow.subRequests.every(s => s.status === 'DONE');
-    return { ...flow, status: allDone ? 'COMPLETED' : 'ACTIVE' };
-  };
-
   const handleSaveFlow = (newFlow: Flow) => {
     const initializedFlow = { ...newFlow, status: 'ACTIVE' as FlowStatus };
     setFlows([initializedFlow, ...flows]);
     closeNewFlow();
     setSelectedFlowId(newFlow.id);
     setNotification(`Snap "${newFlow.title}" vytvořen.`);
-    setViewMode('mine');
-    setDashboardFilter('active'); // Při vytvoření skočíme na aktivní, aby byl vidět
-  };
-
-  const handleSaveAnalysis = (analysis: SavedAnalysis) => {
-    setAnalyses([analysis, ...analyses]);
-    setNotification("Analýza uložena do historie.");
   };
 
   const handleManualReply = async (flowId: string, subId: string, replyText: string, directVerdict?: 'CONFIRMED' | 'REJECTED') => {
-    let summary = '';
-    let verdict: 'CONFIRMED' | 'REJECTED' | 'UNCLEAR' = 'UNCLEAR';
-    if (directVerdict) {
-      summary = replyText;
-      verdict = directVerdict;
-    } else {
+    let summary = replyText;
+    let verdict: 'CONFIRMED' | 'REJECTED' | 'UNCLEAR' = directVerdict || 'UNCLEAR';
+    
+    if (!directVerdict) {
       setNotification("Zpracovávám odpověď...");
       const aiResult = await analyzeReply(replyText);
       summary = aiResult.summary;
       verdict = aiResult.verdict;
     }
+
     setFlows(prev => prev.map(flow => {
       if (flow.id !== flowId) return flow;
-      const updatedFlow = { 
+      return { 
         ...flow, 
         subRequests: flow.subRequests.map(sub => {
           if (sub.id !== subId) return sub;
           return { ...sub, status: 'NEEDS_REVIEW' as Status, replySummary: summary, replyVerdict: verdict };
         })
       };
-      return updateFlowStatus(updatedFlow);
     }));
-    if (!directVerdict) setNotification("Odpověď zanalyzována a odeslána.");
   };
 
   const handleToggleSubStatus = (subId: string) => {
     if (!selectedFlowId) return;
     setFlows(prev => prev.map(flow => {
       if (flow.id !== selectedFlowId) return flow;
-      const updatedFlow = { 
+      const updatedSubRequests = flow.subRequests.map(sub => {
+        if (sub.id !== subId) return sub;
+        const currentIsDone = sub.status === 'DONE';
+        return { ...sub, status: (currentIsDone ? 'SENT' : 'DONE') as Status };
+      });
+      return { 
         ...flow, 
-        subRequests: flow.subRequests.map(sub => {
-          if (sub.id !== subId) return sub;
-          const isDone = sub.status === 'DONE';
-          return { ...sub, status: (isDone ? 'SENT' : 'DONE') as Status };
-        })
+        subRequests: updatedSubRequests,
+        status: updatedSubRequests.every(s => s.status === 'DONE') ? 'COMPLETED' : 'ACTIVE'
       };
-      return updateFlowStatus(updatedFlow);
     }));
   };
 
-  const selectedFlow = flows.find(f => f.id === selectedFlowId);
+  if (!currentUser) return <LoginScreen teamMembers={teamMembers} onLogin={handleLogin} />;
 
-  const startScenario = (text: string) => {
-    setPrefilledDescription(text);
-    setModalInitialMode(null);
-    setModalInitialAIRezim('WORKFLOW');
-    setIsScenariosOpen(false);
-    setIsModalOpen(true);
-  };
+  const DashboardEmptyState = () => (
+    <div className="max-w-7xl mx-auto space-y-12 sm:space-y-16 py-12 sm:py-20 animate-in fade-in zoom-in duration-1000">
+      <div className="text-center space-y-6">
+        <h2 className={`text-4xl sm:text-6xl lg:text-8xl font-black tracking-tighter max-w-4xl mx-auto leading-[1.1] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          Nechte DEK Snap pracovat za vás.
+        </h2>
+        <p className={`text-lg sm:text-2xl font-medium max-w-2xl mx-auto ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+          Zadejte svůj první Snap úkol nebo vyzkoušejte AI analýzu dokumentu.
+        </p>
+      </div>
 
-  if (!currentUser) {
-    return <LoginScreen teamMembers={teamMembers} onLogin={handleLogin} />;
-  }
-
-  const MobileBottomNav = () => (
-    <nav className={`lg:hidden fixed bottom-0 left-0 right-0 h-20 border-t flex justify-around items-center z-40 pb-2 ${isDarkMode ? 'bg-slate-950/90 border-white/5 backdrop-blur-md' : 'bg-white/90 border-slate-200 backdrop-blur-md'}`}>
-      {[
-        { id: 'dashboard', label: 'Snaps', icon: LayoutDashboard, color: 'text-indigo-600' },
-        { id: 'analyses', label: 'Analyses', icon: Sparkles, color: 'text-violet-600' },
-        { id: 'ai-tips', label: 'Tips', icon: Zap, color: 'text-amber-500' },
-        { id: 'team', label: 'Tým', icon: Users, adminOnly: true, color: 'text-slate-600' },
-      ].map((item) => (
-        (!item.adminOnly || currentUser.isAdmin) && (
-          <button 
-            key={item.id}
-            onClick={() => handleTabChange(item.id)}
-            className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all relative ${activeTab === item.id ? (isDarkMode ? 'text-white' : item.color) : (isDarkMode ? 'text-slate-500' : 'text-slate-400')}`}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
+        {[
+          { id: 'scenarios', label: 'Ukázka', desc: 'INSPIRUJTE SE', icon: Lightbulb, color: 'bg-amber-500', onClick: () => setIsScenariosOpen(true) },
+          { id: 'voice', label: 'Diktování', desc: 'MLUVTE PŘIROZENĚ', icon: Mic, color: 'bg-red-500', onClick: () => openNewFlow('voice', 'WORKFLOW') },
+          { id: 'camera', label: 'Fotka', desc: 'SKENUJTE VÝKRESY', icon: Camera, color: 'bg-indigo-500', onClick: () => openNewFlow('camera', 'WORKFLOW') },
+          { id: 'upload', label: 'Soubor', desc: 'PŘÍLOHA K ANALÝZE', icon: Upload, color: 'bg-violet-500', onClick: () => openNewFlow('upload', 'WORKFLOW') },
+          { id: 'text', label: 'Text', desc: 'DETAILNÍ INSTRUKCE', icon: FileText, color: 'bg-emerald-500', onClick: () => openNewFlow('text', 'WORKFLOW') },
+          { id: 'analysis', label: 'AI Analýza', desc: 'DETAILNÍ ROZBOR DAT', icon: Sparkles, color: 'bg-indigo-600', onClick: () => openNewFlow('text', 'ANALYSIS') },
+        ].map((tile) => (
+          <button
+            key={tile.id}
+            onClick={tile.onClick}
+            className={`group p-8 sm:p-12 rounded-[2.5rem] border-2 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-6 hover:scale-[1.03] active:scale-95 ${isDarkMode ? 'bg-slate-900/50 border-white/5 hover:border-indigo-500/50 hover:bg-slate-900' : 'bg-white border-slate-100 hover:border-indigo-200 shadow-xl shadow-slate-200/50'}`}
           >
-            {item.id === 'dashboard' && pendingTeamTasksCount > 0 && (
-              <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white z-10" />
-            )}
-            <div className={`p-1.5 rounded-xl ${activeTab === item.id ? (isDarkMode ? 'bg-white/10' : 'bg-slate-100') : ''}`}>
-              <item.icon className={`w-5 h-5 ${activeTab === item.id ? item.color : ''}`} />
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl ${tile.color} flex items-center justify-center text-white shadow-2xl transition-transform duration-500 group-hover:rotate-12`}>
+              <tile.icon className="w-8 h-8 sm:w-10 sm:h-10" />
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
+            <div>
+              <div className={`text-xl sm:text-2xl font-black mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{tile.label}</div>
+              <div className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">{tile.desc}</div>
+            </div>
           </button>
-        )
-      ))}
-    </nav>
+        ))}
+      </div>
+
+      <div className="flex justify-center pt-8">
+        <button 
+          onClick={() => openNewFlow('text', 'ANALYSIS')}
+          className="flex items-center gap-4 px-12 py-6 bg-indigo-600 text-white rounded-3xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/30 hover:bg-indigo-500 transition-all active:scale-95"
+        >
+          <Sparkles className="w-6 h-6" /> AI ANALÝZA
+        </button>
+      </div>
+    </div>
   );
 
   return (
@@ -299,173 +284,112 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         isDarkMode={isDarkMode}
         toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        pendingTeamCount={pendingTeamTasksCount}
+        pendingTeamCount={pendingTeamTasksCount + pendingMyActionCount}
       />
       
-      <main className={`flex-1 flex flex-col min-w-0 h-screen relative z-10 bg-transparent ${currentUser.isAdmin ? 'pb-24 lg:pb-0' : ''}`}>
-        <header className={`h-20 sm:h-24 px-6 sm:px-12 flex items-center justify-between sticky top-0 z-30 backdrop-blur-xl border-b transition-colors duration-500 ${isDarkMode ? 'bg-slate-950/50 border-white/5' : 'bg-white/80 border-slate-200'}`}>
+      <main className="flex-1 flex flex-col min-w-0 h-screen relative z-10 bg-transparent overflow-y-auto no-scrollbar">
+        <header className={`h-20 sm:h-24 px-6 sm:px-12 flex items-center justify-between sticky top-0 z-30 backdrop-blur-xl border-b ${isDarkMode ? 'bg-slate-950/50 border-white/5' : 'bg-white/80 border-slate-200'}`}>
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setIsMobileMenuOpen(true)} 
-              className={`p-3 rounded-xl transition-all lg:hidden ${isDarkMode ? 'bg-white/5 text-slate-400' : 'bg-slate-100 text-slate-600'}`}
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+            <button onClick={() => setIsMobileMenuOpen(true)} className="p-3 rounded-xl lg:hidden bg-indigo-500/10 text-indigo-500"><Menu className="w-6 h-6" /></button>
             <div className="hidden sm:flex items-center gap-3">
-               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20 shrink-0">S</div>
-               <span className={`font-black tracking-tight text-xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>DEK Snap</span>
+               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">S</div>
+               <span className="font-black tracking-tight text-xl">DEK Snap</span>
             </div>
-            <div className={`flex flex-col justify-center border-l pl-4 lg:hidden ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`}>
-              <div className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
-                {now.toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' })}
-              </div>
-              <div className={`text-xs font-black flex items-center gap-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                <Clock className="w-3 h-3" />
-                {now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-              </div>
+            <div className="hidden lg:flex flex-col justify-center border-l pl-4">
+              <div className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Dnes</div>
+              <div className="text-xs font-black flex items-center gap-1"><Clock className="w-3 h-3" /> {now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2">
-              <button 
-                onClick={() => openNewFlow('text', 'WORKFLOW')} 
-                className={`flex items-center justify-center px-6 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl transition-all group active:scale-95 ${isDarkMode ? 'shadow-indigo-600/20' : 'shadow-indigo-600/10'}`}
-              >
-                <PlusCircle className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" /> 
-                <span className="ml-3 text-[10px] font-black uppercase tracking-widest">Nový Snap</span>
-              </button>
-              <button 
-                onClick={() => openNewFlow('text', 'ANALYSIS')} 
-                className={`flex items-center justify-center px-6 h-14 bg-violet-600 text-white rounded-2xl shadow-xl transition-all group active:scale-95 ${isDarkMode ? 'shadow-violet-600/20' : 'shadow-violet-600/10'}`}
-              >
-                <Sparkles  className="w-5 h-5 group-hover:scale-110 transition-transform duration-500" /> 
-                <span className="ml-3 text-[10px] font-black uppercase tracking-widest">AI Analýza</span>
-              </button>
-            </div>
+            <button onClick={() => openNewFlow('text', 'WORKFLOW')} className="hidden sm:flex items-center justify-center px-6 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl transition-all group active:scale-95">
+              <PlusCircle className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" /> 
+              <span className="ml-3 text-[10px] font-black uppercase tracking-widest">Nový Snap</span>
+            </button>
+            <button onClick={() => openNewFlow('text', 'ANALYSIS')} className="hidden sm:flex items-center justify-center px-6 h-14 bg-violet-600 text-white rounded-2xl shadow-xl transition-all group active:scale-95">
+              <Sparkles  className="w-5 h-5 group-hover:scale-110 transition-transform duration-500" /> 
+              <span className="ml-3 text-[10px] font-black uppercase tracking-widest">AI Analýza</span>
+            </button>
             <div className="sm:hidden flex items-center gap-2">
               <button onClick={() => openNewFlow('text', 'WORKFLOW')} className="w-11 h-11 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg"><PlusCircle className="w-6 h-6"/></button>
-              <button onClick={() => openNewFlow('text', 'ANALYSIS')} className="w-11 h-11 bg-violet-600 text-white rounded-xl flex items-center justify-center shadow-lg"><Sparkles className="w-6 h-6"/></button>
             </div>
-
-            <div className="hidden lg:flex items-center gap-3 ml-2">
-              <button onClick={() => setIsScenariosOpen(true)} className={`p-3 rounded-2xl transition-all ${isDarkMode ? 'bg-white/5 hover:bg-indigo-600 text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600'}`}>
-                <Lightbulb className="w-5 h-5" />
-              </button>
-              <button onClick={() => setIsHelpOpen(true)} className={`p-3 rounded-2xl transition-all ${isDarkMode ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900'}`}>
-                <HelpCircle className="w-5 h-5" />
-              </button>
-            </div>
+            <button onClick={() => setIsScenariosOpen(true)} className="p-3 rounded-2xl bg-white/5 hover:bg-indigo-600 text-slate-400 hover:text-white transition-all"><Lightbulb className="w-5 h-5" /></button>
           </div>
         </header>
 
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-[100] lg:hidden animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-            <div className={`absolute left-0 top-0 bottom-0 w-80 p-8 shadow-2xl flex flex-col gap-8 animate-in slide-in-from-left duration-300 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black">S</div>
-                  <h3 className="text-xl font-black tracking-tight">Menu</h3>
-                </div>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-xl hover:bg-white/5 transition-all"><X className="w-6 h-6" /></button>
-              </div>
-
-              <div className="flex-1 space-y-8 overflow-y-auto no-scrollbar">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Práce</p>
-                  <button onClick={() => handleTabChange('dashboard')} className={`w-full flex items-center gap-4 p-4 rounded-2xl border ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : (isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100')}`}>
-                    <LayoutDashboard className="w-5 h-5" /> <span className="text-xs font-black uppercase tracking-widest">Dashboard</span>
-                  </button>
-                  <button onClick={() => handleTabChange('analyses')} className={`w-full flex items-center gap-4 p-4 rounded-2xl border ${activeTab === 'analyses' ? 'bg-violet-600 text-white border-violet-500 shadow-lg' : (isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100')}`}>
-                    <Sparkles className="w-5 h-5" /> <span className="text-xs font-black uppercase tracking-widest">AI Analyses</span>
-                  </button>
-                  <button onClick={() => handleTabChange('ai-tips')} className={`w-full flex items-center gap-4 p-4 rounded-2xl border ${activeTab === 'ai-tips' ? 'bg-amber-500 text-white border-amber-400 shadow-lg' : (isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100')}`}>
-                    <Zap className="w-5 h-5" /> <span className="text-xs font-black uppercase tracking-widest">AI Power Tips</span>
-                  </button>
-                  <button onClick={() => { setIsHelpOpen(true); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-4 p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                    <HelpCircle className="w-5 h-5 text-slate-500" /> <span className="text-xs font-black uppercase tracking-widest">Nápověda</span>
-                  </button>
-                </div>
-
-                {currentUser.isAdmin && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Správa</p>
-                    <button onClick={() => handleTabChange('rules')} className={`w-full flex items-center gap-4 p-4 rounded-2xl border ${activeTab === 'rules' ? 'bg-slate-800 text-white border-slate-700 shadow-lg' : (isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100')}`}>
-                      <BrainCircuit className="w-5 h-5" /> <span className="text-xs font-black uppercase tracking-widest">Pravidla AI</span>
-                    </button>
-                    <button onClick={() => handleTabChange('team')} className={`w-full flex items-center gap-4 p-4 rounded-2xl border ${activeTab === 'team' ? 'bg-slate-800 text-white border-slate-700 shadow-lg' : (isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100')}`}>
-                      <Users className="w-5 h-5" /> <span className="text-xs font-black uppercase tracking-widest">Tým</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-6 border-t flex flex-col gap-4">
-                <button onClick={() => { setIsDarkMode(!isDarkMode); setIsMobileMenuOpen(false); }} className={`w-full flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                  <span className="text-xs font-black uppercase tracking-widest">{isDarkMode ? 'Denní režim' : 'Noční režim'}</span>
-                  {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                </button>
-                <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 p-5 bg-red-500/10 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest">
-                  <LogOut className="w-5 h-5" /> Odhlásit se
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-12">
-          {selectedFlow ? (
+        <div className="flex-1 p-4 sm:p-6 lg:p-12">
+          {selectedFlowId ? (
             <FlowDetails 
-              flow={selectedFlow} 
+              flow={flows.find(f => f.id === selectedFlowId)!} 
               onBack={() => setSelectedFlowId(null)}
               onToggleStatus={handleToggleSubStatus}
-              onManualReply={(subId, text, verdict) => handleManualReply(selectedFlow.id, subId, text, verdict)}
+              onManualReply={(subId, text, verdict) => handleManualReply(selectedFlowId, subId, text, verdict)}
               teamMembers={teamMembers}
               isDarkMode={isDarkMode}
               currentUser={currentUser}
             />
           ) : activeTab === 'dashboard' ? (
-            <div className="max-w-7xl mx-auto space-y-6 sm:space-y-12 pb-24 lg:pb-0">
-              {showStaleBanner && staleFlows.length > 0 && viewMode === 'mine' && (
+            <div className="max-w-7xl mx-auto space-y-6 sm:space-y-12">
+               {showStaleBanner && staleFlows.length > 0 && viewMode === 'mine' && (
                 <StaleFlowsBanner staleFlows={staleFlows} onDismiss={() => setShowStaleBanner(false)} onSelectFlow={setSelectedFlowId} />
               )}
               
               <div className="flex flex-col gap-6 lg:gap-8">
                 <div className="relative w-full">
-                  <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <input 
                     type="text" 
                     placeholder="Hledat zakázky, PM nebo materiály..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className={`w-full pl-14 pr-6 h-14 sm:h-16 border rounded-3xl text-sm sm:text-base outline-none transition-all placeholder:text-slate-600 shadow-sm ${isDarkMode ? 'bg-white/5 border-white/5 text-white focus:ring-4 focus:ring-indigo-500/10 focus:bg-white/10 backdrop-blur-md' : 'bg-white border-slate-200 text-slate-900 focus:ring-4 focus:ring-indigo-600/5 focus:bg-slate-50'}`}
+                    className={`w-full pl-14 pr-6 h-14 sm:h-16 border rounded-3xl outline-none transition-all placeholder:text-slate-600 shadow-sm ${isDarkMode ? 'bg-white/5 border-white/5 text-white focus:bg-white/10' : 'bg-white border-slate-200 text-slate-900 focus:bg-slate-50'}`}
                   />
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                   <h2 className={`text-3xl sm:text-5xl font-black tracking-tighter flex items-center gap-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    <Layers className={`w-8 h-8 ${isDarkMode ? 'text-white/20' : 'text-slate-200'}`} /> 
+                    <Layers className={`w-8 h-8 ${isDarkMode ? 'text-white/20' : 'text-slate-300'}`} /> 
                     {viewMode === 'mine' ? 'Moje Snaps' : 'Týmové Snaps'}
                   </h2>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {/* Role Switcher */}
-                    <div className={`flex p-1 rounded-2xl border w-full sm:w-fit ${isDarkMode ? 'bg-slate-900/50 border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}>
-                      <button onClick={() => setViewMode('mine')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl transition-all duration-300 ${viewMode === 'mine' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}>
-                        <UserIcon className="w-3.5 h-3.5" /> <span className="text-[10px] font-black uppercase tracking-widest">Moje</span>
+                    {/* Přepínač MOJE / TÝM s notifikačními badge */}
+                    <div className={`flex p-1 rounded-2xl border ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
+                      <button 
+                        onClick={() => setViewMode('mine')} 
+                        className={`flex items-center gap-3 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest relative ${viewMode === 'mine' ? 'bg-red-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                        <UserIcon className="w-3.5 h-3.5" /> 
+                        <span>MOJE</span>
+                        {pendingMyActionCount > 0 && (
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-black border-2 border-slate-950 shadow-lg">
+                            {pendingMyActionCount}
+                          </div>
+                        )}
                       </button>
-                      <button onClick={() => setViewMode('team')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl transition-all duration-300 relative ${viewMode === 'team' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}>
-                        <Users className="w-3.5 h-3.5" /> <span className="text-[10px] font-black uppercase tracking-widest">Tým</span>
-                        {pendingTeamTasksCount > 0 && <div className={`absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg animate-bounce ${viewMode === 'team' ? 'bg-red-500 text-white' : 'bg-indigo-600 text-white'}`}>{pendingTeamTasksCount}</div>}
+                      <button 
+                        onClick={() => setViewMode('team')} 
+                        className={`flex items-center gap-3 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest relative ${viewMode === 'team' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                        <Users className="w-3.5 h-3.5" /> 
+                        <span>TÝM</span>
+                        {pendingTeamTasksCount > 0 && (
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-indigo-500 text-white rounded-full flex items-center justify-center text-[9px] font-black border-2 border-slate-950 shadow-lg">
+                            {pendingTeamTasksCount}
+                          </div>
+                        )}
                       </button>
                     </div>
 
-                    {/* Status Switcher - Redesigned */}
-                    <div className={`flex p-1 rounded-2xl border w-full sm:w-fit backdrop-blur-md transition-colors ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
-                      {(['to_action', 'active', 'archive'] as const).map(f => (
-                        <button key={f} onClick={() => setDashboardFilter(f)} className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${dashboardFilter === f ? (isDarkMode ? 'bg-white text-slate-900 shadow-lg' : 'bg-slate-900 text-white shadow-lg') : (isDarkMode ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-900')}`}>
-                          {f === 'to_action' ? 'K AKCI' : f === 'active' ? 'AKTIVNÍ' : 'ARCHIV'}
+                    {/* Stavové filtry */}
+                    <div className={`flex p-1 rounded-2xl border ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
+                      {(['to_action', 'active', 'archive'] as const).map((filter) => (
+                        <button 
+                          key={filter}
+                          onClick={() => setDashboardFilter(filter)} 
+                          className={`px-4 sm:px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest ${dashboardFilter === filter ? (isDarkMode ? 'bg-white text-slate-900 shadow-lg' : 'bg-white text-slate-900 shadow-md') : 'text-slate-500 hover:text-white'}`}
+                        >
+                          {filter === 'to_action' ? 'K AKCI' : filter === 'active' ? 'AKTIVNÍ' : 'ARCHIV'}
                         </button>
                       ))}
                     </div>
@@ -474,159 +398,32 @@ const App: React.FC = () => {
               </div>
 
               {filteredFlows.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 animate-in fade-in duration-700">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 animate-in fade-in duration-700">
                   {filteredFlows.map(flow => (
                     <FlowCard key={flow.id} flow={flow} onClick={() => setSelectedFlowId(flow.id)} teamMembers={teamMembers} isDarkMode={isDarkMode} currentUser={currentUser} />
                   ))}
                 </div>
               ) : (
-                <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12 py-6 sm:py-10 animate-in fade-in zoom-in duration-1000">
-                  <div className="text-center space-y-4 sm:space-y-6 px-4">
-                    {searchQuery ? (
-                       <div className="py-20">
-                          <div className={`inline-flex items-center justify-center p-3 rounded-2xl mb-4 ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
-                            <Search className="w-8 h-8" />
-                          </div>
-                          <h2 className={`text-3xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Žádná shoda pro "{searchQuery}"</h2>
-                          <p className="text-slate-500">Zkuste zadat jiné klíčové slovo nebo změňte filtry.</p>
-                       </div>
-                    ) : (
-                      <>
-                        <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
-                          <Sparkles className="w-4 h-4 animate-pulse" /> Žádné Snapy k akci
-                        </div>
-                        <h2 className={`text-3xl sm:text-6xl lg:text-8xl font-black tracking-tighter max-w-4xl mx-auto leading-[1.1] sm:leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {dashboardFilter === 'to_action' ? 'Skvělá práce, máte čistý stůl.' : 'Nechte DEK Snap pracovat za vás.'}
-                        </h2>
-                        <p className={`text-base sm:text-2xl font-medium max-w-2xl mx-auto leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                          Zadejte svůj nový Snap úkol nebo vyzkoušejte AI analýzu dokumentu níže.
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {!searchQuery && (
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 px-4">
-                      {[
-                        { id: 'scenarios', label: 'Ukázka', desc: 'Inspirujte se', icon: Lightbulb, color: 'bg-amber-500', action: () => setIsScenariosOpen(true) },
-                        { id: 'voice', label: 'Diktování', desc: 'Mluvte přirozeně', icon: Mic, color: 'bg-red-500', action: () => openNewFlow('voice', 'WORKFLOW') },
-                        { id: 'camera', label: 'Fotka', desc: 'Skenujte výkresy', icon: Camera, color: 'bg-indigo-600', action: () => openNewFlow('camera', 'WORKFLOW') },
-                        { id: 'upload', label: 'Soubor', desc: 'Příloha k analýze', icon: Upload, color: 'bg-violet-600', action: () => openNewFlow('upload', 'WORKFLOW') },
-                        { id: 'text', label: 'Text', desc: 'Detailní instrukce', icon: FileText, color: 'bg-emerald-600', action: () => openNewFlow('text', 'WORKFLOW') },
-                        { id: 'analysis', label: 'AI Analýza', desc: 'Detailní rozbor dat', icon: Sparkles, color: 'bg-violet-600', action: () => openNewFlow('text', 'ANALYSIS') },
-                      ].map((tile) => (
-                        <button 
-                          key={tile.id}
-                          onClick={tile.action}
-                          className={`group p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border text-left transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl active:scale-95 ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20' : 'bg-white border-slate-200 hover:border-indigo-200'}`}
-                        >
-                          <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl mb-4 sm:mb-8 flex items-center justify-center text-white shadow-xl transition-transform duration-500 group-hover:scale-110 ${tile.color}`}>
-                            <tile.icon className="w-6 h-6 sm:w-8 sm:h-8" />
-                          </div>
-                          <h4 className={`text-base sm:text-xl font-black mb-1 sm:mb-2 tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{tile.label}</h4>
-                          <p className="text-[10px] sm:text-sm font-medium text-slate-500 leading-tight">{tile.desc}</p>
-                          <div className="hidden sm:flex mt-6 items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-500 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
-                            Spustit <ArrowRight className="w-3.5 h-3.5" />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {!searchQuery && (
-                    <div className="hidden lg:flex justify-center mt-12">
-                      <button 
-                        onClick={() => openNewFlow('text', 'ANALYSIS')}
-                        className={`h-20 px-24 flex items-center gap-6 bg-violet-600 text-white rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm transition-all shadow-2xl shadow-violet-600/30 active:scale-95 hover:bg-violet-700 hover:shadow-violet-600/40`}
-                      >
-                        <Sparkles className="w-7 h-7" /> AI ANALÝZA
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <DashboardEmptyState />
               )}
             </div>
           ) : activeTab === 'analyses' ? (
             <AIAnalysesArchive analyses={analyses} setAnalyses={setAnalyses} isDarkMode={isDarkMode} />
           ) : activeTab === 'ai-tips' ? (
-            <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-               <div className={`p-8 sm:p-12 rounded-[3rem] relative overflow-hidden border ${isDarkMode ? 'bg-gradient-to-br from-amber-950/40 to-slate-900 border-amber-500/20' : 'bg-gradient-to-br from-amber-50 to-white border-amber-200 shadow-xl shadow-amber-500/5'}`}>
-                <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-                  <Zap className="w-64 h-64 text-amber-500" />
-                </div>
-                <div className="relative z-10 max-w-3xl space-y-6">
-                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-amber-500/20">
-                    <Zap className="w-4 h-4 fill-current" /> AI Power User Guide
-                  </div>
-                  <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Mistrovství s AI Snap</h2>
-                  <p className="text-xl font-medium text-slate-400 leading-relaxed">Nepřemýšlejte nad formou. Čím přirozeněji zadáte úkol, tím lépe ho Gemini pochopí. Zde je návod, jak ovládnout DEK Snap jako profík.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  {
-                    title: "Kontext je král",
-                    desc: "Místo 'Potřebuju nacenit SDK' napište 'PM Sádrokartony: Nacenit 200m2 RB desek pro novostavbu v Liberci'. AI okamžitě identifikuje roli i prioritu.",
-                    icon: Info,
-                    color: "bg-blue-500"
-                  },
-                  {
-                    title: "Vision Snap",
-                    desc: "Nahrajte fotku ručního náčrtu ze stavby. AI vyextrahuje položky a vytvoří z nich strukturovaný seznam úkolů za vás.",
-                    icon: Camera,
-                    color: "bg-emerald-500"
-                  },
-                  {
-                    title: "Hlasové zkratky",
-                    desc: "Využívejte diktování přímo na stavbě. Gemini filtruje šum a soustředí se na klíčová slova jako 'materiál', 'závoz' nebo 'sleva'.",
-                    icon: Mic,
-                    color: "bg-red-500"
-                  },
-                  {
-                    title: "Hromadné úkoly",
-                    desc: "Pokud zmíníte 'Všichni obchodníci', AI nastaví targetScope na ROLE_ALL. Úkol tak dostane celý tým dané specializace.",
-                    icon: Users,
-                    color: "bg-indigo-500"
-                  },
-                  {
-                    title: "Čistá Analýza",
-                    desc: "Režim Analýza slouží pro vytěžování dat. Vložte e-mail od klienta a nechte si udělat stručný výcuc důležitých faktů bez tvorby úkolů.",
-                    icon: Sparkles,
-                    color: "bg-violet-500"
-                  },
-                  {
-                    title: "Priorita spěchá",
-                    desc: "Zvolte prioritu 'Spěchá' pro automatické zkrácení termínů. AI pak PMům zdůrazní, že jde o urgentní záležitost.",
-                    icon: Zap,
-                    color: "bg-amber-500"
-                  }
-                ].map((tip, i) => (
-                  <div key={i} className={`p-8 rounded-[2rem] border transition-all duration-500 hover:-translate-y-2 ${isDarkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-white border-slate-100 shadow-sm hover:shadow-xl hover:border-amber-200'}`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg mb-6 ${tip.color}`}>
-                      <tip.icon className="w-6 h-6" />
-                    </div>
-                    <h3 className={`text-xl font-black mb-3 tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{tip.title}</h3>
-                    <p className={`text-sm font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{tip.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : activeTab === 'rules' ? (
-            <RulesManager mappings={mappings} setMappings={setMappings} teamMembers={teamMembers} currentUser={currentUser} isDarkMode={isDarkMode} />
+            <AIPowerTips isDarkMode={isDarkMode} />
           ) : activeTab === 'team' ? (
             <TeamView teamMembers={teamMembers} setTeamMembers={setTeamMembers} isDarkMode={isDarkMode} />
+          ) : activeTab === 'rules' ? (
+            <RulesManager mappings={mappings} setMappings={setMappings} teamMembers={teamMembers} currentUser={currentUser} isDarkMode={isDarkMode} />
           ) : null}
         </div>
       </main>
-
-      {currentUser.isAdmin && <MobileBottomNav />}
 
       {isModalOpen && (
         <NewFlowModal 
           onClose={closeNewFlow}
           onSave={handleSaveFlow}
-          onSaveAnalysis={handleSaveAnalysis}
+          onSaveAnalysis={(a) => setAnalyses([a, ...analyses])}
           mappings={mappings}
           setMappings={setMappings}
           initialDescription={prefilledDescription}
@@ -640,7 +437,7 @@ const App: React.FC = () => {
       )}
 
       {isHelpOpen && <HelpModal onClose={() => setIsHelpOpen(false)} isDarkMode={isDarkMode} />}
-      {isScenariosOpen && <ScenariosModal onClose={() => setIsScenariosOpen(false)} onStartScenario={startScenario} isDarkMode={isDarkMode} />}
+      {isScenariosOpen && <ScenariosModal onClose={() => setIsScenariosOpen(false)} onStartScenario={(t) => { setPrefilledDescription(t); setIsModalOpen(true); }} isDarkMode={isDarkMode} />}
     </div>
   );
 };

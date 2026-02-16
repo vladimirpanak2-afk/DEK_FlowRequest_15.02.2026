@@ -157,7 +157,7 @@ export const analyzeReply = async (replyText: string): Promise<{ summary: string
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Analyze email reply: "${replyText}". Return JSON {summary, verdict}.`,
+    contents: `Analyzuj tuto odpověď na e-mail: "${replyText}". Souhrn (summary) napiš výhradně v češtině. Vrať JSON ve formátu {summary, verdict}.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {

@@ -72,7 +72,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ flow, onBack, onToggleStatus,
 
   return (
     <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-7xl mx-auto space-y-8 pb-32">
-      <div className="flex items-center">
+      <div className="flex items-center justify-between px-4">
         <button 
           onClick={onBack}
           className={`group flex items-center gap-4 font-black text-xs uppercase tracking-widest transition-all ${isDarkMode ? 'text-slate-500 hover:text-indigo-400' : 'text-slate-500 hover:text-indigo-600'}`}
@@ -116,9 +116,6 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ flow, onBack, onToggleStatus,
                     ? (hasRejections ? 'VYŘÍZENO (S VÝHRADOU)' : 'HOTOVO A PROVĚŘENO') 
                     : 'PROBÍHÁ ANALÝZA A DELEGACE'
                   }
-                </div>
-                <div className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 px-4 py-1.5 rounded-full border ${isDarkMode ? 'bg-white/5 text-slate-400 border-white/5' : 'bg-white/50 text-slate-400 border-slate-200'}`}>
-                  <CheckCircle2 className="w-4 h-4" /> {completedTasks.length}/{flow.subRequests.length} hotovo
                 </div>
               </div>
 

@@ -111,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <LayoutDashboard className="w-5 h-5 shrink-0" />
               <span>Dashboard</span>
               {pendingTeamCount > 0 && (
-                <div className="absolute right-3 w-5 h-5 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center animate-pulse border border-white/20">
+                <div className="absolute right-3 w-5 h-5 bg-indigo-500 text-white text-[9px] rounded-full flex items-center justify-center animate-pulse border border-white/20">
                   {pendingTeamCount}
                 </div>
               )}
