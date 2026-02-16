@@ -1,6 +1,5 @@
 
-import { SubRequest, Flow } from "../types.ts";
-import { TEAM_MEMBERS } from "../constants.ts";
+import { SubRequest, Flow, User } from "../types.ts";
 
 /**
  * Central EmailService – handles SMTP transport and task assignment automation.
@@ -47,23 +46,24 @@ export class EmailService {
 
   /**
    * AUTOMATION: Compiles task email with full Flow context.
+   * Logic: Sends to a specific assignee identified by their unique ID.
    */
-  static async processTaskAssignment(task: SubRequest, flow: Flow): Promise<string> {
-    const roleKey = task.assigned_role_key;
-    const recipients = TEAM_MEMBERS.filter(member => member.role_key === roleKey);
+  static async processTaskAssignment(task: SubRequest, flow: Flow, teamMembers: User[]): Promise<string> {
+    // We find the specific user from the provided team list (runtime state)
+    const recipient = teamMembers.find(member => member.id === task.assigneeId);
     
-    if (recipients.length === 0) {
-      throw new Error(`Critical failure: No recipient found for role "${roleKey}".`);
+    if (!recipient) {
+      throw new Error(`Critical failure: No recipient found for user ID "${task.assigneeId}".`);
     }
 
     const otherRoles = flow.subRequests
-      .filter(s => s.assigned_role_key !== roleKey)
-      .map(s => TEAM_MEMBERS.find(m => m.role_key === s.assigned_role_key)?.role)
+      .filter(s => s.id !== task.id)
+      .map(s => teamMembers.find(m => m.id === s.assigneeId)?.role)
       .filter(Boolean);
 
     const subject = `[FR-${flow.id}] ${flow.title} – ${task.task_type}`;
     const body = `
-Dobrý den,
+Dobrý den, ${recipient.name},
 
 V systému DEK FlowRequest Vám byl přidělen úkol v rámci zakázky: ${flow.title}
 
@@ -78,7 +78,7 @@ SOUVISLOSTI PROJEKTU:
 ${flow.description}
 
 TÝMOVÁ SPOLUPRÁCE:
-Na tomto projektu se dále podílí: ${otherRoles.length > 0 ? otherRoles.join(', ') : 'Žádné další role'}
+Na tomto projektu se dále podílí: ${otherRoles.length > 0 ? Array.from(new Set(otherRoles)).join(', ') : 'Žádné další role'}
 
 Pro potvrzení stačí odpovědět na tento e-mail.
 
@@ -86,14 +86,12 @@ S pozdravem,
 DEK FlowRequest Engine
     `.trim();
 
-    for (const member of recipients) {
-      await this.sendEmail(member.email, subject, body);
-    }
+    await this.sendEmail(recipient.email, subject, body);
 
     return body;
   }
 }
 
-export const processTaskEmailAutomation = async (task: SubRequest, flow: Flow): Promise<string> => {
-  return await EmailService.processTaskAssignment(task, flow);
+export const processTaskEmailAutomation = async (task: SubRequest, flow: Flow, teamMembers: User[]): Promise<string> => {
+  return await EmailService.processTaskAssignment(task, flow, teamMembers);
 }

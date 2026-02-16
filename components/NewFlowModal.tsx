@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fix: Corrected import casing to match services/emailService.ts to resolve TypeScript casing conflict
-import { processTaskEmailAutomation } from '../services/emailService.ts';
+// Fixed casing for EmailService import to match PascalCase standard
+import { processTaskEmailAutomation } from '../services/EmailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 import TermButton from './TermButton.tsx';
 
@@ -239,6 +239,21 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
     const flowId = `f-${Date.now()}`;
     const finalTasks: SubRequest[] = [];
     
+    // Create the final flow context once
+    const tempFlowContext: Flow = { 
+      id: flowId, 
+      title, 
+      description, 
+      creatorId: currentUser.id, 
+      createdAt: new Date().toISOString(), 
+      tags: [priority === 'URGENT' ? 'Spěchá' : 'Normální'], 
+      subRequests: [], 
+      status: 'ACTIVE' 
+    };
+
+    const expandedTasks: SubRequest[] = [];
+    
+    // Phase 1: Expand broadcasts into individual tasks
     for (let i = 0; i < subTasks.length; i++) {
       const st = subTasks[i];
       if (st.isBroadcast) {
@@ -250,25 +265,32 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
         );
 
         for (const user of usersInRole) {
-          const task: SubRequest = { 
+          expandedTasks.push({ 
             ...st, 
             id: `t-bc-${user.id}-${i}-${Date.now()}`, 
             assigneeId: user.id,
-            isBroadcast: true 
-          } as SubRequest;
-          
-          await processTaskEmailAutomation(task, { id: flowId, title, description, creatorId: currentUser.id, createdAt: '', tags: [], subRequests: [], status: 'ACTIVE' });
-          finalTasks.push({ ...task, status: 'SENT' });
+            status: 'PENDING'
+          } as SubRequest);
         }
       } else {
-        const task = st as SubRequest;
-        await processTaskEmailAutomation(task, { id: flowId, title, description, creatorId: currentUser.id, createdAt: '', tags: [], subRequests: [], status: 'ACTIVE' });
-        finalTasks.push({ ...task, status: 'SENT' });
+        expandedTasks.push({ ...st, id: `t-${i}-${Date.now()}`, status: 'PENDING' } as SubRequest);
       }
-      setSendProgress(((i + 1) / subTasks.length) * 100);
+    }
+
+    // Phase 2: Send and record each task
+    for (let i = 0; i < expandedTasks.length; i++) {
+      const task = expandedTasks[i];
+      try {
+        await processTaskEmailAutomation(task, tempFlowContext, teamMembers);
+        finalTasks.push({ ...task, status: 'SENT' });
+      } catch (e) {
+        console.error("Failed to send task email:", e);
+        finalTasks.push({ ...task, status: 'BLOCKED' });
+      }
+      setSendProgress(((i + 1) / expandedTasks.length) * 100);
     }
     
-    onSave({ id: flowId, title, description, creatorId: currentUser.id, createdAt: new Date().toISOString(), tags: [priority === 'URGENT' ? 'Spěchá' : 'Normální'], subRequests: finalTasks, status: 'ACTIVE' });
+    onSave({ ...tempFlowContext, subRequests: finalTasks });
   };
 
   const AssigneePicker = ({ task, index }: { task: Partial<SubRequest>, index: number }) => {
