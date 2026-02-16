@@ -58,7 +58,6 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('fr_flows', JSON.stringify(flows)), [flows]);
   useEffect(() => localStorage.setItem('fr_analyses', JSON.stringify(analyses)), [analyses]);
   useEffect(() => localStorage.setItem('fr_team', JSON.stringify(teamMembers)), [teamMembers]);
-  useEffect(() => localStorage.setItem('fr_mappings', JSON.stringify(mappings)), [mappings]);
   useEffect(() => localStorage.setItem('fr_theme', isDarkMode ? 'dark' : 'light'), [isDarkMode]);
   useEffect(() => {
     if (currentUser) localStorage.setItem('fr_current_user', JSON.stringify(currentUser));
@@ -393,8 +392,7 @@ const App: React.FC = () => {
                   <span className="text-xs font-black uppercase tracking-widest">{isDarkMode ? 'Denní režim' : 'Noční režim'}</span>
                   {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
-                {/* Fix: Changed handleLogout prop to onClick */}
-                <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 p-5 bg-red-500/10 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest">
+                <button handleLogout={handleLogout} className="w-full flex items-center justify-center gap-3 p-5 bg-red-500/10 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest">
                   <LogOut className="w-5 h-5" /> Odhlásit se
                 </button>
               </div>
@@ -467,12 +465,16 @@ const App: React.FC = () => {
                 </div>
               ) : !searchQuery ? (
                 <div className="max-w-7xl mx-auto space-y-12 py-10 animate-in fade-in zoom-in duration-1000">
-                  <div className="text-center space-y-4">
+                  <div className="text-center space-y-6">
                     <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
                       <Sparkles className="w-4 h-4 animate-pulse" /> Začněte nový Snap
                     </div>
-                    <h2 className={`text-4xl sm:text-6xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Jak dnes zadáte práci?</h2>
-                    <p className={`text-lg font-medium max-w-2xl mx-auto ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Okamžitý vhled. Okamžitá akce. AI asistent se postará o zbytek.</p>
+                    <h2 className={`text-4xl sm:text-6xl lg:text-8xl font-black tracking-tighter max-w-4xl mx-auto leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      Nechte DEK Snap pracovat za vás.
+                    </h2>
+                    <p className={`text-xl sm:text-2xl font-medium max-w-2xl mx-auto leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Zadejte svůj první Snap úkol nebo vyzkoušejte AI analýzu dokumentu.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
