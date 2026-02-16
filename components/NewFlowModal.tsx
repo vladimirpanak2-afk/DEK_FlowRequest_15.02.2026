@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2, Trash2, Mic, MicOff, MailCheck, Camera, Upload, ChevronDown, UserCheck, Users, Clock, Zap, AlertTriangle, FileImage, Check, Image as ImageIcon, Search, User, UserPlus, Users2, Plus, FileSearch, ListChecks, Copy, History, AtSign, Briefcase, Calendar as CalendarIcon } from 'lucide-react';
 import { analyzeTaskBreakdown, analyzeDocumentVision, performPureAnalysis } from '../services/geminiService.ts';
-// Fix: Corrected import casing to match services/EmailService.ts to resolve TypeScript casing conflict
-import { processTaskEmailAutomation } from '../services/EmailService.ts';
+// Fix: Corrected import casing to match services/emailService.ts to resolve TypeScript casing conflict
+import { processTaskEmailAutomation } from '../services/emailService.ts';
 import { Flow, SubRequest, RoleMapping, User as UserType, Status, SavedAnalysis } from '../types.ts';
 import TermButton from './TermButton.tsx';
 
@@ -518,7 +518,7 @@ const NewFlowModal: React.FC<NewFlowModalProps> = ({
               <div className={`relative rounded-[2.5rem] border-2 transition-all ${isDarkMode ? 'bg-white/5 border-white/5 shadow-2xl shadow-indigo-500/5' : 'bg-slate-50 border-slate-100 shadow-inner'}`}>
                 <div className="flex flex-col lg:flex-row">
                   <div className="flex-1">
-                    <textarea ref={mainTextareaRef} value={description + interimTranscript} onChange={(e) => setDescription(e.target.value)} placeholder={modalMode === 'WORKFLOW' ? `Máme rozdělanou tu školu v Berouně...` : `Zadejte dotaz k analýze...`} className="w-full p-8 lg:p-12 bg-transparent border-none outline-none text-xl sm:text-2xl font-semibold resize-none leading-tight overflow-hidden" />
+                    <textarea ref={mainTextareaRef} value={description + interimTranscript} onChange={(e) => setDescription(e.target.value)} placeholder={modalMode === 'WORKFLOW' ? `Máme rozdělanou tu školu v Berouně...` : `Vyfoť, nahrej, nadiktuj. Řekni co chceš a zbytek už udělá DEK Snap...`} className="w-full p-8 lg:p-12 bg-transparent border-none outline-none text-xl sm:text-2xl font-semibold resize-none leading-tight overflow-hidden" />
                   </div>
                   {selectedImage && (
                     <div className="lg:w-80 p-8 border-t lg:border-t-0 lg:border-l flex flex-col items-center justify-center bg-black/5 dark:bg-white/5">
